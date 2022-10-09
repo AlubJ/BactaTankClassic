@@ -10,7 +10,7 @@ gpu_set_tex_min_mip(0);
 gpu_set_tex_max_mip(4);
 gpu_set_tex_mip_bias(0);
 gpu_set_tex_mip_filter(tf_anisotropic);
-display_reset(4, true);
+display_reset(8, true);
 
 // Default Vertex Format
 vertex_format_begin(); // Standard Static Vertex Format
@@ -76,7 +76,7 @@ else
 	}
 }
 
-global.version = "v0.0.3_r5";
+global.version = "v0.0.3_r6";
 
 #endregion
 
