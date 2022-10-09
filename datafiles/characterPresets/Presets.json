@@ -1,0 +1,137 @@
+{
+    "presets": [
+        {
+            "author": "Bario The Weird",
+            "character_title": "Better UV Lando General",
+            "location": "characterPresets/Models/BarioTheWeird/LANDO_GENERAL_PC.GHG",
+            "skeleton": "caped_lsw2"
+        },
+        {
+            "author": "Bario The Weird",
+            "character_title": "Better UV Lando General (Generic Jedi)",
+            "location": "characterPresets/Models/BarioTheWeird/LANDO_GENERAL_GJ_PC.GHG",
+            "skeleton": "caped_lsw1_standard"
+        },
+        {
+            "author": "Bario The Weird",
+            "character_title": "Better UV Lando General (LB1)",
+            "location": "characterPresets/Models/BarioTheWeird/LANDO_GENERAL_LB1_PC.GHG",
+            "skeleton": "caped_lb1_standard"
+        },
+        {
+            "author": "Bario The Weird",
+            "character_title": "Youngling Blaster",
+            "location": "characterPresets/Models/BarioTheWeird/YOUNGLING_BLASTER_PC.GHG",
+            "skeleton": "caped_lsw2_edited"
+        },
+        {
+            "author": "Bario The Weird",
+            "character_title": "Youngling Saber",
+            "location": "characterPresets/Models/BarioTheWeird/YOUNGLING_SABER_PC.GHG",
+            "skeleton": "caped_lsw2_edited"
+        },
+        {
+            "author": "Bario The Weird",
+            "character_title": "Better UV Anakin Jedi",
+            "location": "characterPresets/Models/BarioTheWeird/ANAKIN_JEDI_PC.GHG",
+            "skeleton": "unique"
+        },
+        {
+            "author": "Bario The Weird",
+            "character_title": "Better UV Jango Fett",
+            "location": "characterPresets/Models/BarioTheWeird/JANGOFETT_PC.GHG",
+            "skeleton": "unique"
+        },
+        {
+            "author": "Bario The Weird",
+            "character_title": "Clone With No Helmet",
+            "location": "characterPresets/Models/BarioTheWeird/CLONE_NOHELMET_PC.GHG",
+            "skeleton": "lsw1_helmet"
+        },
+
+        {
+            "author": "Jacko",
+            "character_title": "Better UV Stormtrooper",
+            "location": "characterPresets/Models/Jacko/STORMTROOPER_PC.GHG",
+            "skeleton": "lsw2"
+        },
+
+        {
+            "author": "JCDsky",
+            "character_title": "Better Leia Endor Blaster",
+            "location": "characterPresets/Models/JCDsky/LEIA_ENDOR_BLASTER_PC.GHG",
+            "skeleton": "lsw2"
+        },
+        {
+            "author": "JCDsky",
+            "character_title": "Better Leia Endor Saber",
+            "location": "characterPresets/Models/JCDsky/LEIA_ENDOR_SABER_PC.GHG",
+            "skeleton": "lsw2"
+        },
+
+        {
+            "author": "JustNathan",
+            "character_title": "Better UV Luminara",
+            "location": "characterPresets/Models/JustNathan/LUMINARA_PC.GHG",
+            "skeleton": "caped_lsw1_standard"
+        },
+        {
+            "author": "JustNathan",
+            "character_title": "Better UV Royal Guard",
+            "location": "characterPresets/Models/JustNathan/ROYALGUARD_PC.GHG",
+            "skeleton": "lsw1_standard"
+        },
+
+        {
+            "author": "Skulluse",
+            "character_title": "Ghost Lando General",
+            "location": "characterPresets/Models/Skulluse/LANDO_GENERAL_GHOST_PC.GHG",
+            "skeleton": "caped_lsw2"
+        },
+
+        {
+            "author": "Stayno",
+            "character_title": "B.U.L.G With Weapons (Generic Jedi)",
+            "location": "characterPresets/Models/Stayno/LANDO_GENERAL_GJ_WEAPONS_PC.GHG",
+            "skeleton": "caped_lsw1_standard"
+        },
+
+        {
+            "author": "Suso",
+            "character_title": "Fixed Teeth Han Solo",
+            "location": "characterPresets/Models/Suso/HANSOLO_PC.GHG",
+            "skeleton": "lsw2"
+        },
+        {
+            "author": "Suso",
+            "character_title": "B.U.L.G With Weapons",
+            "location": "characterPresets/Models/Suso/LANDO_GENERAL_WEAPONS_PC.GHG",
+            "skeleton": "caped_lsw2"
+        },
+        {
+            "author": "Suso",
+            "character_title": "B.U.L.G Blaster With Skeleton Legs",
+            "location": "characterPresets/Models/Suso/LANDO_GENERAL_SKELELEGS_BLASTER_PC.GHG",
+            "skeleton": "caped_lsw1_standard"
+        },
+        {
+            "author": "Suso",
+            "character_title": "B.U.L.G Saber With Skeleton Legs",
+            "location": "characterPresets/Models/Suso/LANDO_GENERAL_SKELELEGS_SABER_PC.GHG",
+            "skeleton": "caped_lsw1_standard"
+        },
+        {
+            "author": "Suso",
+            "character_title": "Better UV Obiwan Kenobi Episode 3",
+            "location": "characterPresets/Models/Suso/OBIWANKENOBI_EP3_PC.GHG",
+            "skeleton": "caped_lsw1_standard"
+        },
+
+        {
+            "author": "Terminus",
+            "character_title": "B.U.L.G With Skirt (Generic Jedi)",
+            "location": "characterPresets/Models/Terminus/LANDO_GENERAL_GJ_SKIRT_PC.GHG",
+            "skeleton": "caped_lsw1_standard"
+        }
+    ]
+}
