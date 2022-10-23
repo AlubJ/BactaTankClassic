@@ -76,7 +76,7 @@ else
 	}
 }
 
-global.version = "v0.0.3_r6";
+global.version = "v0.0.3_r8";
 
 #endregion
 

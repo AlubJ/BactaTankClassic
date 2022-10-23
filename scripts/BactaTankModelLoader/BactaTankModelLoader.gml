@@ -42,9 +42,6 @@ function initBactaTank()
 		half2,
 	}
 	global.__attributeTypes = ["Float 2", "Float 3", "Byte 4", "Half 2"];
-	
-	// Debug Model Version
-	global.__modelVersion = ["pcghgNU20Last", "pcghgNU20First", "none"];
 }
 
 #endregion
@@ -73,6 +70,7 @@ function loadBactaTankModel(model)
 	var nu20 = readBactaTankNU20(buffer, modelVersion, buffer_tell(buffer));
 	variable_struct_set(nu20, "buffer", nu20Buffer);
 	variable_struct_set(modelStruct, "nu20", nu20);
+	show_debug_message("<BactaTank Model Loader> NU20 Read!");
 	
 	// Seek either to the end of the NU20 or the start of the file depending on version
 	if (modelVersion == bactatankModelVersion.pcghgNU20First) buffer_seek(buffer, buffer_seek_start, nu20Size + 4);
@@ -81,13 +79,16 @@ function loadBactaTankModel(model)
 	// Read Textures
 	var textures = readBactaTankTextures(buffer, modelStruct);
 	variable_struct_set(modelStruct, "textures", textures);
+	show_debug_message("<BactaTank Model Loader> Textures Read!");
 	
 	// Read Buffers
 	var vertexBuffers = readBactaTankBuffers(buffer);
 	var indexBuffers = readBactaTankBuffers(buffer);
+	show_debug_message("<BactaTank Model Loader> Buffers Read!");
 	
 	// Link Meshes
 	linkBactaTankMeshes(modelStruct, vertexBuffers, indexBuffers);
+	show_debug_message("<BactaTank Model Loader> Meshes Linked!");
 	
 	// Delete Buffers
 	for (var i = 0; i < array_length(vertexBuffers); i++) buffer_delete(vertexBuffers[i]);
@@ -95,6 +96,7 @@ function loadBactaTankModel(model)
 	
 	// Generate VBOs
 	generateBactaTankVBOs(modelStruct);
+	show_debug_message("<BactaTank Model Loader> VBOs Generated!");
 	
 	// Delete Buffer
 	buffer_delete(buffer);
@@ -169,6 +171,10 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 	var textureMetaData = [];
 	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) - 4);
 	
+	var currentTexture = 0;
+	
+	show_debug_message("<BactaTank Model Loader> Reading " + string(textureCount) + " Textures");
+	
 	for (var i = 0; i < textureCount; i++)
 	{
 		// Seek to texture entry
@@ -177,25 +183,52 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 		
 		// Texture Metadata
 		var textureOffset = buffer_tell(buffer) - nu20Offset;
+		
 		var textureWidth = buffer_read(buffer, buffer_u32);
 		var textureHeight = buffer_read(buffer, buffer_u32);
 		var textureSize = 0;
+		var textureIsCubemap = false;
 		
 		// NU20 Last MetaData
 		if (modelVersion == bactatankModelVersion.pcghgNU20First)
 		{
+			// Seek to cubemap
+			buffer_seek(buffer, buffer_seek_relative, 0x2c);
+			textureIsCubemap = buffer_read(buffer, buffer_u32);
+			
+			// Check If Texture Is Cubemap Or Not
+			if (textureIsCubemap)
+			{
+				i += 5;
+				tempOffset = tempOffset + 20;
+			}
+			
 			// Seek to size
-			buffer_seek(buffer, buffer_seek_relative, 0x3c);
+			buffer_seek(buffer, buffer_seek_relative, 0x0c);
 			textureSize = buffer_read(buffer, buffer_u32);
+		}
+		else
+		{
+			if (textureWidth == 0)
+			{
+				i += 4;
+				textureMetaData[currentTexture-1].isCubemap = true;
+				buffer_seek(buffer, buffer_seek_start, tempOffset + 16);
+				continue;
+			}
 		}
 		
 		// Texture Struct
-		textureMetaData[i] = {
-			offset: textureOffset,
-			width:	textureWidth,
-			height: textureHeight,
-			size:	textureSize,
+		textureMetaData[currentTexture] = {
+			offset:		textureOffset,
+			width:		textureWidth,
+			height:		textureHeight,
+			size:		textureSize,
+			isCubemap:	textureIsCubemap,
 		}
+		
+		// Increase Current Texture Index
+		currentTexture++;
 		
 		// Seek back to start
 		buffer_seek(buffer, buffer_seek_start, tempOffset);
@@ -213,6 +246,10 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 	// Material
 	var materials = [];
 	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) - 4);
+	
+	show_debug_message("<BactaTank Model Loader> Reading " + string(materialCount) + " Materials");
+	
+	var lastVF = 0;
 	
 	// Materials
 	for (var i = 0; i < materialCount; i++)
@@ -256,13 +293,15 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 	variable_struct_set(nu20, "materials", materials);
 	
 	// Goto GSNH
-	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x30);
+	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x1cc);
 	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) + 0x10);
 	
 	// Mesh List
 	var meshes = [];
 	var meshCount = buffer_read(buffer, buffer_u32);
 	buffer_seek(buffer, buffer_seek_relative, 0x08);
+	
+	show_debug_message("<BactaTank Model Loader> Reading " + string(meshCount) + " Meshes");
 	
 	// Mesh Loop
 	for (var i = 0; i < meshCount; i++)
@@ -339,6 +378,8 @@ function readBactaTankLayers(buffer, boneCount)
 	
 	// Layer Count
 	var layerCount = buffer_read(buffer, buffer_s32);
+	
+	show_debug_message("<BactaTank Model Loader> Reading " + string(layerCount) + " Layers");
 	
 	// Seek to layer entry
 	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) - 4);
@@ -518,20 +559,22 @@ function readBactaTankLayers(buffer, boneCount)
 
 function readBactaTankTextures(buffer, modelStruct)
 {
+	show_debug_message("<BactaTank Model Loader> Loading " + string(array_length(modelStruct.nu20.textureMetaData)) + " Textures");
 	// Textures Array
 	var textures = [];
 	
 	// Textures Loop
-	for (var i = 0; i < modelStruct.nu20.textureCount; i++)
+	for (var i = 0; i < array_length(modelStruct.nu20.textureMetaData); i++)
 	{
 		var textureSize = modelStruct.nu20.textureMetaData[i].size;
 		if (modelStruct.modelVersion == bactatankModelVersion.pcghgNU20Last)
 		{
 			// Texture Meta Data
-			var textureWidth = buffer_read(buffer, buffer_u32);
-			var textureHeight = buffer_read(buffer, buffer_u32);
+			var textureWidth = buffer_read(buffer, buffer_s32);
+			var textureHeight = buffer_read(buffer, buffer_s32);
 			buffer_seek(buffer, buffer_seek_relative, 0x0c)
 			textureSize = buffer_read(buffer, buffer_u32);
+			if (textureWidth < 0) textureWidth = -textureWidth;
 			
 			// Replace metadata
 			modelStruct.nu20.textureMetaData[i].width = textureWidth;
@@ -545,17 +588,22 @@ function readBactaTankTextures(buffer, modelStruct)
 		
 		// Get Textures File Name For Saving
 		var name = buffer_sha1(textures[i], 0, textureSize);
-		modelStruct.nu20.textureMetaData[i].file = global.tempDirectory + @"\" + name;
-		
-		// Save DDS
-		buffer_save(textures[i], global.tempDirectory + @"\" + name + ".dds");
+		modelStruct.nu20.textureMetaData[i].file = global.tempDirectory + name;
 		
 		// Convert DDS to PNG
-		//show_debug_message("\"bin/utils/BactaTankUtils.exe\" --convertImage \"" + global.tempDirectory + name + ".dds\" \"" + global.tempDirectory + name + ".png\"");
-		if (!file_exists(global.tempDirectory + @"\" + name + ".png")) ProcessExecute("\"bin/utils/BactaTankUtils.exe\" --convertImage \"" + global.tempDirectory + name + ".dds\" \"" + global.tempDirectory + name + ".png\"");
+		var sprite;
+		if (!file_exists(global.tempDirectory + @"\_textures\" + name + ".png"))
+		{
+			sprite = readBactaTankTexture(textures[i]);
+			sprite_save(textures[i], 0, global.tempDirectory + @"\_textures\" + name + ".png")
+		}
+		else
+		{
+			sprite = sprite_add(global.tempDirectory + @"\_textures\" + name + ".png", 1, false, false, 0, 0);
+		}
 		
 		// Add Sprite
-		modelStruct.nu20.textureMetaData[i].sprite = sprite_add(global.tempDirectory + name + ".png", 1, false, false, 0, 0);
+		modelStruct.nu20.textureMetaData[i].sprite = sprite;
 		
 		// Seek Forward Past Texture
 		buffer_seek(buffer, buffer_seek_relative, textureSize);
@@ -623,54 +671,103 @@ function generateBactaTankVBOs(modelStruct)
 		}
 		
 		// Get Vertex Format
-		var vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[getBactaTankMeshMaterial(modelStruct, i)].vertexFormat);
+		var material = getBactaTankMeshMaterial(modelStruct, i);
+		var vertexFormat = [];
+		if (material != -1)	vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[material].vertexFormat);
 		
-		// Create Vertex Buffer
-		var currentVertexBuffer = vertex_create_buffer();
-		vertex_begin(currentVertexBuffer, global.vertexFormat);
+		// Vertex Buffer
+		var currentVertexBuffer = noone;
 		
-		// Build VBO
-		for (var j = 0; j < mesh.triangleCount+2; j++)
+		var timer = get_timer();
+		
+		// Get Cached Mesh If Possible
+		var name = sha1_string_utf8(buffer_sha1(mesh.vertexBuffer, 0, buffer_get_size(mesh.vertexBuffer)) + buffer_sha1(mesh.indexBuffer, 0, buffer_get_size(mesh.indexBuffer))) + ".mesh";
+		if (file_exists(global.tempDirectory + @"\_meshes\" + name))
 		{
-			var index = buffer_peek(mesh.indexBuffer, j*2, buffer_u16);
-			var pos = array_create(3, 0);
-			var norm = array_create(3, 0);
-			var tex = array_create(2, 0);
-			var col = 0;
-			for (var k = 0; k < array_length(vertexFormat); k++)
+			var cachedMesh = buffer_load(global.tempDirectory + @"\_meshes\" + name);
+			currentVertexBuffer = vertex_create_buffer_from_buffer(cachedMesh, global.vertexFormat);
+		}
+		else
+		{
+			// Create Vertex Buffer
+			currentVertexBuffer = vertex_create_buffer();
+			vertex_begin(currentVertexBuffer, global.vertexFormat);
+		
+			// Build VBO
+			for (var j = 0; j < mesh.triangleCount+2; j++)
 			{
-				switch (vertexFormat[k].attribute)
+				var index = buffer_peek(mesh.indexBuffer, j*2, buffer_u16);
+				var pos = array_create(3, 0);
+				var norm = array_create(3, 0);
+				var tex = array_create(2, 0);
+				var col = 0;
+				for (var k = 0; k < array_length(vertexFormat); k++)
 				{
-					case bactatankVertexAttributes.position:
-						pos = [-buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_f32),
-							   buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 4, buffer_f32),
-							   buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 8, buffer_f32)];
-						break;
-					case bactatankVertexAttributes.normal:
-						norm = [((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_u8)/255)*2)-1,
-							   ((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 1, buffer_u8)/255)*2)-1,
-							   ((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 2, buffer_u8)/255)*2)-1];
-						break;
-					case bactatankVertexAttributes.uv:
-						tex = [buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_f32),
-								buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 4, buffer_f32)];
-						break;
-					case bactatankVertexAttributes.colour:
-						col = make_colour_rgb(
-								buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_u8),
-								buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 1, buffer_u8),
-								buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 2, buffer_u8));
-						break;
+					switch (vertexFormat[k].attribute)
+					{
+						case bactatankVertexAttributes.position:
+							pos = [-buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_f32),
+								   buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 4, buffer_f32),
+								   buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 8, buffer_f32)];
+							break;
+						case bactatankVertexAttributes.normal:
+							norm = [((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_u8)/255)*2)-1,
+								   ((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 1, buffer_u8)/255)*2)-1,
+								   ((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 2, buffer_u8)/255)*2)-1];
+							break;
+						case bactatankVertexAttributes.uv:
+							tex = [buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_f32),
+									buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 4, buffer_f32)];
+							break;
+						case bactatankVertexAttributes.colour:
+							col = make_colour_rgb(
+									buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position, buffer_u8),
+									buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 1, buffer_u8),
+									buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + vertexFormat[k].position + 2, buffer_u8));
+							break;
+					}
 				}
-			}
+				
+				if (array_length(vertexFormat) == 0)
+				{
+					pos = [-buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index), buffer_f32),
+							buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 4, buffer_f32),
+							buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 8, buffer_f32)];
+					norm = [((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 12, buffer_u8)/255)*2)-1,
+							((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 13, buffer_u8)/255)*2)-1,
+							((buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 14, buffer_u8)/255)*2)-1];
+					if (mesh.vertexStride == 28)
+			        {
+			            tex = [buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 20, buffer_f32),
+								buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 24, buffer_f32)];
+			        }
+			        else if (mesh.vertexStride == 36 || mesh.vertexStride == 44)
+			        {
+			            tex = [buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 28, buffer_f32),
+								buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 32, buffer_f32)];
+			        }
+			        else if (mesh.vertexStride == 32 || mesh.vertexStride == 40)
+			        {
+			            tex = [buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 24, buffer_f32),
+								buffer_peek(mesh.vertexBuffer, (mesh.vertexStride * index) + 28, buffer_f32)];
+			        }
+				}
 			
-			vertex_position_3d(currentVertexBuffer, pos[0], pos[1], pos[2]);
-			vertex_normal(currentVertexBuffer, norm[0], norm[1], norm[2]);
-			vertex_texcoord(currentVertexBuffer, tex[0], tex[1]);
-			vertex_colour(currentVertexBuffer, #ffffff, 1);
+				vertex_position_3d(currentVertexBuffer, pos[0], pos[1], pos[2]);
+				vertex_normal(currentVertexBuffer, norm[0], norm[1], norm[2]);
+				vertex_texcoord(currentVertexBuffer, tex[0], tex[1]);
+				vertex_colour(currentVertexBuffer, #ffffff, 1);
+			}
+		
+			vertex_end(currentVertexBuffer);
+			
+			// Cache Vertex Buffer
+			var cachedMesh = buffer_create_from_vertex_buffer(currentVertexBuffer, buffer_fixed, 1);
+			buffer_save(cachedMesh, global.tempDirectory + @"\_meshes\" + name);
+			buffer_delete(cachedMesh);
 		}
 		
-		vertex_end(currentVertexBuffer);
+		show_debug_message("Mesh " + string(i) + " took " + string(get_timer() - timer) + "ms to generate a VBO");
 		
 		// Freeze VBO For Better Performance
 		vertex_freeze(currentVertexBuffer);
@@ -731,7 +828,7 @@ function drawBactaTankMesh(modelStruct, meshIndex)
 	var material = getBactaTankMeshMaterial(modelStruct, meshIndex);
 	
 	var texture = -1;
-	if (modelStruct.nu20.materials[material].textureID != -1) texture = sprite_get_texture(modelStruct.nu20.textureMetaData[modelStruct.nu20.materials[material].textureID].sprite, 0);
+	if (material != -1 && modelStruct.nu20.materials[material].textureID != -1 && modelStruct.nu20.materials[material].textureID < array_length(modelStruct.textures)) texture = sprite_get_texture(modelStruct.nu20.textureMetaData[modelStruct.nu20.materials[material].textureID].sprite, 0);
 		
 	// Submit Mesh
 	//gpu_set_cullmode(cull_counterclockwise);

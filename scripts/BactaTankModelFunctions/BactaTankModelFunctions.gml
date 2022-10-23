@@ -10,36 +10,33 @@ function replaceBactaTankTexture(modelStruct, textureIndex, textureFile)
 {
 	// Load New Texture Buffer
 	var buffer = buffer_load(textureFile);
-						
+	
 	// Get Metadata
 	var newWidth = buffer_peek(buffer, 0x10, buffer_u32);
 	var newHeight = buffer_peek(buffer, 0x0c, buffer_u32);
 	var newSize = buffer_get_size(buffer);
-						
+	
 	// Get Textures File Name For Saving
 	var name = buffer_sha1(buffer, 0, newSize);
 	modelStruct.nu20.textureMetaData[textureIndex].file = global.tempDirectory + @"\" + name;
-		
-	// Save DDS
-	buffer_save(buffer, global.tempDirectory + @"\" + name + ".dds");
-		
+	
 	// Convert DDS to PNG
-	//show_debug_message("\"bin/python/python.exe\" \"bin/scripts/texconverter.py\" \"" + global.tempDirectory + name + ".dds\" \"" + global.tempDirectory + "/" + name + ".png\"");
-	ProcessExecute("\"bin/utils/BactaTankUtils.exe\" --convertImage \"" + global.tempDirectory + name + ".dds\" \"" + global.tempDirectory + name + ".png\"");
+	var sprite = readBactaTankTexture(buffer);
+	sprite_save(sprite, 0, global.tempDirectory + @"\_textures\" + name + ".png")
 						
 	// Free Memory
 	var oldSpriteIndex = modelStruct.nu20.textureMetaData[textureIndex].sprite;
 	buffer_delete(modelStruct.textures[textureIndex]);
-						
+	
 	// Set Buffer
 	modelStruct.textures[textureIndex] = buffer;
 	modelStruct.nu20.textureMetaData[textureIndex].width = newWidth;
 	modelStruct.nu20.textureMetaData[textureIndex].height = newHeight;
 	modelStruct.nu20.textureMetaData[textureIndex].size = newSize;
-						
+	
 	// Add Sprite
-	modelStruct.nu20.textureMetaData[textureIndex].sprite = sprite_add(global.tempDirectory + name + ".png", 1, false, false, 0, 0);
-	//sprite_delete(oldSpriteIndex);
+	modelStruct.nu20.textureMetaData[textureIndex].sprite = sprite;
+	sprite_delete(oldSpriteIndex);
 }
 
 #endregion
@@ -133,6 +130,7 @@ function replaceBactaTankMesh(modelStruct, meshIndex, meshFile)
 	
 	for (var i = 0; i < newVertexCount; i++)
 	{
+		show_debug_message(position[i][1]);
 		for (var j = 0; j < array_length(vertexFormat); j++)
 		{
 			switch (vertexFormat[j].attribute)
@@ -159,10 +157,19 @@ function replaceBactaTankMesh(modelStruct, meshIndex, meshFile)
 					buffer_write(mesh.vertexBuffer, buffer_u32, 0);
 					break;
 				case bactatankVertexAttributes.blendIndices:
-					buffer_write(mesh.vertexBuffer, buffer_s32, -1);
+					buffer_write(mesh.vertexBuffer, buffer_s32, -65280);
 					break;
 				case bactatankVertexAttributes.blendWeights:
-					buffer_write(mesh.vertexBuffer, buffer_s32, -1);
+					if (position[i][1] <= 0.2)
+					{
+						buffer_write(mesh.vertexBuffer, buffer_s32, 127);
+						show_debug_message("skinning 1");
+					}
+					else
+					{
+						buffer_write(mesh.vertexBuffer, buffer_s32, 32512);
+						show_debug_message("skinning 2");
+					}
 					break;
 			}
 		}

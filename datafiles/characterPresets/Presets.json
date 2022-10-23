@@ -132,6 +132,12 @@
             "character_title": "B.U.L.G With Skirt (Generic Jedi)",
             "location": "characterPresets/Models/Terminus/LANDO_GENERAL_GJ_SKIRT_PC.GHG",
             "skeleton": "caped_lsw1_standard"
+        },
+        {
+            "author": "Terminus",
+            "character_title": "Better UV Boba Fett",
+            "location": "characterPresets/Models/Terminus/BOBAFETT_PC.GHG",
+            "skeleton": "lsw2"
         }
     ]
 }

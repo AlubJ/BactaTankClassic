@@ -79,215 +79,17 @@ function uiMainLeftPanel()
 
 #endregion
 
-#region Alpha Main Panel
+#region Alpha Main Screen
 
-function uiAlphaMainPanel(textureStruct)
+function uiAlphaMainScreen(textureStruct)
 {
-	// Keyboard Shortcuts
-	if (keyboard_check(vk_control))
-	{
-		if (keyboard_check_pressed(ord("O")))
-		{
-			var file = get_open_filename("TTGames Model (*.GHG)|*.ghg", "");
-			if (file != "")
-			{
-				// Change Cursor To Loading Cursor
-				window_set_cursor(cr_hourglass);
-					
-				// Destroy Old Model If It's Loaded
-				if (global.model != -1) destroyBactaTankModel(global.model);
-					
-				// Get File Name
-				var split = string_split(file + @"\", @"\");
-				global.filename = split[array_length(split)-1];
-					
-				// Load New Model
-				global.model = loadBactaTankModel(file);
-						
-				// Change Window Title
-				window_set_caption(global.filename + " - BactaTank");
-					
-				// Create New Directory
-				directory_create(global.tempDirectory + global.filename + @"\");
-					
-				// Set Selected
-				textureStruct.textureSelected = -1;
-				textureStruct.meshSelected = -1;
-				textureStruct.materialSelected = -1;
-					
-				// Change Cursor Back To Default
-				window_set_cursor(cr_default);
-			}
-		}
-		else if (keyboard_check_pressed(ord("S")) && global.model != -1)
-		{
-			var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", "*.ghg");
-			if (file != "")
-			{
-				window_set_cursor(cr_hourglass);
-				exportBactaTankModel(global.model, file);
-				window_set_cursor(cr_default);
-			}
-		}
-	}
-	
-	// Check If File Is Being Dragged Onto The App
-	var array = file_dropper_get_files([".ghg"]);
-	file_dropper_flush();
-
-	if (array_length(array) > 0 && file_exists(array[0])) {
-		// Change Cursor To Loading Cursor
-		window_set_cursor(cr_hourglass);
-		
-		// Destroy Old Model If It's Loaded
-		if (global.model != -1) destroyBactaTankModel(global.model);
-		
-		// Get File Name
-		var split = string_split(array[0] + @"\", @"\");
-		global.filename = split[array_length(split)-1];
-		
-		// Load New Model
-		global.model = loadBactaTankModel(array[0]);
-		
-		// Change Window Title
-		window_set_caption(global.filename + " - BactaTank");
-		
-		// Set Selected
-		textureStruct.textureSelected = -1;
-		textureStruct.meshSelected = -1;
-		textureStruct.materialSelected = -1;
-		
-		// Change Cursor Back To Default
-		window_set_cursor(cr_default);
-	}
-	
 	// ImGUI Main Window
 	imguigml_set_next_window_size(global.screenWidth, global.screenHeight, EImGui_Cond.Always);
 	imguigml_set_next_window_pos(0, 0, EImGui_Cond.Once);
 	
-	var ret = imguigml_begin("AlphaMainPanel", undefined, EImGui_WindowFlags.NoMove | EImGui_WindowFlags.NoResize | EImGui_WindowFlags.NoTitleBar | EImGui_WindowFlags.NoScrollbar| EImGui_WindowFlags.NoScrollWithMouse | (global.model != -1 ? EImGui_WindowFlags.MenuBar : 0));
+	var ret = imguigml_begin("AlphaMainPanel", undefined, EImGui_WindowFlags.NoMove | EImGui_WindowFlags.NoResize | EImGui_WindowFlags.NoTitleBar | EImGui_WindowFlags.NoScrollbar| EImGui_WindowFlags.NoScrollWithMouse | (global.model != -1 && textureStruct.homeConfirmation == false ? EImGui_WindowFlags.MenuBar : 0));
 	
-	if (ret[0] && global.model == -1)
-	{
-		// Logo
-		imguigml_set_cursor_pos(58, 32);
-		imguigml_sprite(sprBactaTankLogoBeta, 0, 128, 128);
-		imguigml_set_cursor_pos(198, 64);
-		imguigml_sprite(sprBactaTankText, 0, 256, 64);
-		imguigml_set_cursor_pos(390, 116);
-		imguigml_text(global.version);
-		
-		#region Buttons
-		
-		imguigml_set_cursor_pos(208, 202);
-		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
-		if (imguigml_button("Open GHG", 94, 24))
-		{
-			var file = get_open_filename("TTGames Model (*.GHG)|*.ghg", "");
-			if (file != "")
-			{
-				// Change Cursor To Loading Cursor
-				window_set_cursor(cr_hourglass);
-					
-				// Destroy Old Model If It's Loaded
-				if (global.model != -1) destroyBactaTankModel(global.model);
-					
-				// Get File Name
-				var split = string_split(file + @"\", @"\");
-				global.filename = split[array_length(split)-1];
-					
-				// Load New Model
-				global.model = loadBactaTankModel(file);
-						
-				// Change Window Title
-				window_set_caption(global.filename + " - BactaTank");
-					
-				// Create New Directory
-				directory_create(global.tempDirectory + global.filename + @"\");
-					
-				// Set Selected
-				textureStruct.textureSelected = -1;
-				textureStruct.meshSelected = -1;
-				textureStruct.materialSelected = -1;
-					
-				// Change Cursor Back To Default
-				window_set_cursor(cr_default);
-			}
-		}
-		imguigml_push_style_color(EImGui_Col.Button, 1, 1, 1, 0);
-		imguigml_set_cursor_pos(170, 232);
-		imguigml_text("or drag and drop a *.GHG here!");
-		
-		#endregion
-		
-		#region Character Presets
-		
-		imguigml_set_cursor_pos(8, 264);
-		if (imguigml_begin_child("CharacterPresetContainer", 0, 296))
-		{
-			imguigml_set_cursor_pos(8, 6);
-			imguigml_text_disabled("Preset");
-			imguigml_set_cursor_pos(228, 6);
-			imguigml_text_disabled("Skeleton");
-			imguigml_set_cursor_pos(370, 6);
-			imguigml_text_disabled("Author");
-			if (imguigml_begin_child("CharacterPresetList", 0, 0))
-			{
-				for (var i = 0; i < array_length(global.characterPresets); i++)
-				{
-					if (imguigml_selectable("##hidden" + string(i), textureStruct.presetSelected == i)[0])
-					{
-						textureStruct.presetSelected = i;
-					}
-					imguigml_same_line();
-					var cursor = imguigml_get_cursor_pos();
-					imguigml_text(global.characterPresets[i].character_title);
-					imguigml_same_line();
-					imguigml_set_cursor_pos(228, cursor[1]);
-					imguigml_text(global.characterPresets[i].skeleton);
-					imguigml_same_line();
-					imguigml_set_cursor_pos(370, cursor[1]);
-					imguigml_text(global.characterPresets[i].author);
-				}
-				imguigml_end_child();
-			}
-			imguigml_end_child();
-		}
-		imguigml_set_cursor_pos(208, 568);
-		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
-		if (imguigml_button("Create", 94, 24) && textureStruct.presetSelected != -1)
-		{
-			// Change Cursor To Loading Cursor
-			window_set_cursor(cr_hourglass);
-		
-			// Destroy Old Model If It's Loaded
-			if (global.model != -1) destroyBactaTankModel(global.model);
-		
-			// Get File Name
-			var split = string_split(global.characterPresets[textureStruct.presetSelected].location + @"/", @"/");
-			global.filename = split[array_length(split)-1];
-		
-			// Load New Model
-			global.model = loadBactaTankModel(global.characterPresets[textureStruct.presetSelected].location);
-		
-			// Change Window Title
-			window_set_caption(global.filename + " - BactaTank");
-		
-			// Set Selected
-			textureStruct.textureSelected = -1;
-			textureStruct.meshSelected = -1;
-			textureStruct.materialSelected = -1;
-		
-			// Change Cursor Back To Default
-			window_set_cursor(cr_default);
-		}
-		imguigml_push_style_color(EImGui_Col.Button, 1, 1, 1, 0);
-		
-		#endregion
-		
-	}
-	
-	if (ret[0] && global.model != -1)
+	if (ret[0] && global.model != -1 && textureStruct.homeConfirmation == false)
 	{
 		#region MenuBar
 		
@@ -295,6 +97,14 @@ function uiAlphaMainPanel(textureStruct)
 		{
 			if (imguigml_begin_menu("File"))
 			{
+				// Back Home
+				if (imguigml_menu_item("Home", "Ctrl+H"))
+				{
+					textureStruct.homeConfirmation = true;
+				}
+				
+				imguigml_separator();
+				
 				// Open GHG
 				if (imguigml_menu_item("Open GHG", "Ctrl+O"))
 				{
@@ -331,7 +141,7 @@ function uiAlphaMainPanel(textureStruct)
 				}
 			
 				// Save GHG
-				if (imguigml_menu_item("Save GHG", "Ctrl+O", false, global.model == -1 ? false : true))
+				if (imguigml_menu_item("Save GHG", "Ctrl+S", false, global.model == -1 ? false : true))
 				{
 					var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", "*.ghg");
 					if (file != "")
@@ -464,7 +274,7 @@ function uiAlphaMainPanel(textureStruct)
 				
 					// Replace Texture Button
 					imguigml_set_cursor_pos(cursor[0] + 214, cursor[1] + 36);
-					if (imguigml_button("Replace Texture", 264, 24))
+					if (imguigml_button("Replace Texture", 264, 24) && !global.model.nu20.textureMetaData[textureStruct.textureSelected].isCubemap)
 					{
 						// Get Open File Name For Replacement
 						var file = get_open_filename("DirectDraw Surface (*.dds)|*.dds", "");
@@ -540,7 +350,7 @@ function uiAlphaMainPanel(textureStruct)
 				{
 					// Get Main Cursor Position
 					var mainCursor = imguigml_get_cursor_pos();
-				
+					
 					// Mesh List Box
 					for (var i = 0; i < array_length(global.model.nu20.meshes); i++)
 					{
@@ -613,7 +423,7 @@ function uiAlphaMainPanel(textureStruct)
 					if (imguigml_button("Export Mesh", 264, 24))
 					{
 						// Get Save File Name For DDS Export
-						var file = get_save_filename("BactaTank Model (*.btank)|*.btank", "*.btank");
+						var file = get_save_filename("Wavefront Object (*.obj)|*.obj|BactaTank Model (*.btank)|*.btank", "*.obj");
 						if (file != "")
 						{
 							// Set Cursor To Wait
@@ -629,7 +439,7 @@ function uiAlphaMainPanel(textureStruct)
 				
 					// Replace Mesh Button
 					imguigml_set_cursor_pos(cursor[0] + 214, cursor[1] + 36);
-					if (imguigml_button("Replace Mesh", 264, 24) && global.model.nu20.meshes[textureStruct.meshSelected].bones[0] == -1)
+					if (imguigml_button("Replace Mesh", 264, 24))
 					{
 						// Get Open File Name For Replacement
 						var file = get_open_filename("BactaTank Model (*.btank)|*.btank", "");
@@ -940,6 +750,387 @@ function uiAlphaMainPanel(textureStruct)
 		imguigml_set_cursor_pos(global.screenWidth - 96, global.screenHeight - 20);
 		imguigml_text("Created By Alub");
 		imguigml_end();
+	}
+}
+
+#endregion
+
+#region Alpha Home Screen
+
+function uiAlphaHomeScreen(texureStruct)
+{
+	// ImGUI Main Window
+	imguigml_set_next_window_size(global.screenWidth, global.screenHeight, EImGui_Cond.Always);
+	imguigml_set_next_window_pos(0, 0, EImGui_Cond.Once);
+	
+	var ret = imguigml_begin("AlphaMainPanel", undefined, EImGui_WindowFlags.NoMove | EImGui_WindowFlags.NoResize | EImGui_WindowFlags.NoTitleBar | EImGui_WindowFlags.NoScrollbar| EImGui_WindowFlags.NoScrollWithMouse | EImGui_WindowFlags.MenuBar);
+	
+	if (ret[0])
+	{
+		//if (imguigml_begin_menu_bar())
+		//{
+		//	if (imguigml_begin_menu("Tools"))
+		//	{
+		//		if (imguigml_menu_item("Font Editor"))
+		//		{
+		//			textureStruct.toolSelected = "fe";
+		//		}
+		//		imguigml_end_menu();
+		//	}
+			
+		//	imguigml_end_menu_bar();
+		//}
+		// Logo
+		imguigml_set_cursor_pos(58, 32);
+		imguigml_sprite(sprBactaTankLogoBeta, 0, 128, 128);
+		imguigml_set_cursor_pos(198, 64);
+		imguigml_sprite(sprBactaTankText, 0, 256, 64);
+		imguigml_set_cursor_pos(390, 116);
+		imguigml_text(global.version);
+		
+		#region Buttons
+		
+		imguigml_set_cursor_pos(208, 202);
+		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
+		if (imguigml_button("Open GHG", 94, 24))
+		{
+			var file = get_open_filename("TTGames Model (*.GHG)|*.ghg", "");
+			if (file != "")
+			{
+				// Change Cursor To Loading Cursor
+				window_set_cursor(cr_hourglass);
+					
+				// Destroy Old Model If It's Loaded
+				if (global.model != -1) destroyBactaTankModel(global.model);
+					
+				// Get File Name
+				var split = string_split(file + @"\", @"\");
+				global.filename = split[array_length(split)-1];
+					
+				// Load New Model
+				global.model = loadBactaTankModel(file);
+						
+				// Change Window Title
+				window_set_caption(global.filename + " - BactaTank");
+					
+				// Create New Directory
+				directory_create(global.tempDirectory + global.filename + @"\");
+					
+				// Set Selected
+				textureStruct.textureSelected = -1;
+				textureStruct.meshSelected = -1;
+				textureStruct.materialSelected = -1;
+					
+				// Change Cursor Back To Default
+				window_set_cursor(cr_default);
+			}
+		}
+		imguigml_push_style_color(EImGui_Col.Button, 1, 1, 1, 0);
+		imguigml_set_cursor_pos(170, 232);
+		imguigml_text("or drag and drop a *.GHG here!");
+		
+		#endregion
+		
+		#region Character Presets
+		
+		imguigml_set_cursor_pos(8, 264);
+		if (imguigml_begin_child("CharacterPresetContainer", 0, 296))
+		{
+			imguigml_set_cursor_pos(8, 6);
+			imguigml_text_disabled("Preset");
+			imguigml_set_cursor_pos(228, 6);
+			imguigml_text_disabled("Skeleton");
+			imguigml_set_cursor_pos(370, 6);
+			imguigml_text_disabled("Author");
+			if (imguigml_begin_child("CharacterPresetList", 0, 0))
+			{
+				for (var i = 0; i < array_length(global.characterPresets); i++)
+				{
+					if (imguigml_selectable("##hidden" + string(i), textureStruct.presetSelected == i)[0])
+					{
+						textureStruct.presetSelected = i;
+					}
+					imguigml_same_line();
+					var cursor = imguigml_get_cursor_pos();
+					imguigml_text(global.characterPresets[i].character_title);
+					imguigml_same_line();
+					imguigml_set_cursor_pos(228, cursor[1]);
+					imguigml_text(global.characterPresets[i].skeleton);
+					imguigml_same_line();
+					imguigml_set_cursor_pos(370, cursor[1]);
+					imguigml_text(global.characterPresets[i].author);
+				}
+				imguigml_end_child();
+			}
+			imguigml_end_child();
+		}
+		imguigml_set_cursor_pos(208, 568);
+		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
+		if (imguigml_button("Create", 94, 24) && textureStruct.presetSelected != -1)
+		{
+			// Change Cursor To Loading Cursor
+			window_set_cursor(cr_hourglass);
+		
+			// Destroy Old Model If It's Loaded
+			if (global.model != -1) destroyBactaTankModel(global.model);
+		
+			// Get File Name
+			var split = string_split(global.characterPresets[textureStruct.presetSelected].location + @"/", @"/");
+			global.filename = split[array_length(split)-1];
+		
+			// Load New Model
+			global.model = loadBactaTankModel(global.characterPresets[textureStruct.presetSelected].location);
+		
+			// Change Window Title
+			window_set_caption(global.filename + " - BactaTank");
+		
+			// Set Selected
+			textureStruct.textureSelected = -1;
+			textureStruct.meshSelected = -1;
+			textureStruct.materialSelected = -1;
+		
+			// Change Cursor Back To Default
+			window_set_cursor(cr_default);
+		}
+		imguigml_push_style_color(EImGui_Col.Button, 1, 1, 1, 0);
+		
+		#endregion
+		
+	}
+}
+
+#endregion
+
+#region Alpha Go Home Screen
+
+function uiAlphaGoHomeScreen(textureStruct)
+{
+	// ImGUI Main Window
+	imguigml_set_next_window_size(global.screenWidth, global.screenHeight, EImGui_Cond.Always);
+	imguigml_set_next_window_pos(0, 0, EImGui_Cond.Once);
+	
+	var ret = imguigml_begin("AlphaMainPanel", undefined, EImGui_WindowFlags.NoMove | EImGui_WindowFlags.NoResize | EImGui_WindowFlags.NoTitleBar | EImGui_WindowFlags.NoScrollbar| EImGui_WindowFlags.NoScrollWithMouse | (global.model != -1 && textureStruct.homeConfirmation == false ? EImGui_WindowFlags.MenuBar : 0));
+	
+	if (ret[0] && global.model != -1 && textureStruct.homeConfirmation == true)
+	{
+		imguigml_set_cursor_pos(152, 285);
+		imguigml_text("Are you sure you want to return home?");
+		imguigml_set_cursor_pos(157, 305);
+		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
+		if (imguigml_button("Yes", 94, 24))
+		{
+			// Destroy Old Model If It's Loaded
+			if (global.model != -1) destroyBactaTankModel(global.model);
+			global.model = -1;
+		
+			// Change Window Title
+			window_set_caption("BactaTank");
+			
+			textureStruct.homeConfirmation = false;
+		}
+		imguigml_push_style_color(EImGui_Col.Button, 1, 1, 1, 0);
+		
+		imguigml_set_cursor_pos(259, 305);
+		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
+		if (imguigml_button("No", 94, 24))
+		{
+			textureStruct.homeConfirmation = false;
+		}
+		imguigml_push_style_color(EImGui_Col.Button, 1, 1, 1, 0);
+	}
+}
+
+#endregion
+
+#region Font Editor
+
+function uiFontEditor(textureStruct)
+{
+	// Check If File Is Being Dragged Onto The App
+	var array = file_dropper_get_files([".fnt"]);
+	file_dropper_flush();
+
+	if (array_length(array) > 0 && file_exists(array[0])) {
+		// Change Cursor To Loading Cursor
+		window_set_cursor(cr_hourglass);
+		
+		// Get File Name
+		var split = string_split(array[0] + @"\", @"\");
+		
+		// Load New Font
+		textureStruct.loadedFont = loadBactaTankFont(array[0]);
+		
+		// Set Selected
+		textureStruct.fontCharacterSelected = -1;
+		
+		// Change Cursor Back To Default
+		window_set_cursor(cr_default);
+	}
+	
+	// ImGUI Main Window
+	imguigml_set_next_window_size(global.screenWidth, global.screenHeight, EImGui_Cond.Always);
+	imguigml_set_next_window_pos(0, 0, EImGui_Cond.Once);
+	
+	var ret = imguigml_begin("AlphaMainPanel", undefined, EImGui_WindowFlags.NoMove | EImGui_WindowFlags.NoResize | EImGui_WindowFlags.NoTitleBar | EImGui_WindowFlags.NoScrollbar| EImGui_WindowFlags.NoScrollWithMouse | EImGui_WindowFlags.MenuBar);
+	
+	if (ret[0] && textureStruct.loadedFont != -1)
+	{
+		if (imguigml_begin_menu_bar())
+		{
+			if (imguigml_menu_item("Open Font"))
+			{
+				textureStruct.toolSelected = "fe";
+			}
+			
+			imguigml_end_menu_bar();
+		}
+		
+		imguigml_set_cursor_pos(8, 30);
+		imguigml_sprite(sprTransparent, 0, 244, 244);
+		imguigml_set_cursor_pos(8, 30);
+		imguigml_sprite(textureStruct.loadedFont.sprite, 0, 244, 244);
+		
+		imguigml_set_cursor_pos(260, 30);
+		if (imguigml_begin_child("CharacterPreview", 0, 244))
+		{
+			imguigml_end_child();
+		}
+		
+		imguigml_set_cursor_pos(8, 282);
+		if (imguigml_begin_child("CharacterList", 0, 294, false, EImGui_WindowFlags.AlwaysVerticalScrollbar))
+		{
+			var xx = 0;
+			var yy = 0;
+			for (var i = 0; i < 20; i++)
+			{
+				var posX = 6 + ((64 * xx) + (2 * xx));
+				var posY = 6 + ((64 * yy) + (2 * yy));
+				imguigml_set_cursor_pos(posX, posY);
+				imguigml_button("##hiddenCharacter" + string(i), 64, 64);
+				imguigml_set_cursor_pos(posX+floor((64 - textureStruct.loadedFont.characters[i].width) / 2), posY + 8);
+				imguigml_sprite_part(textureStruct.loadedFont.sprite, 0, textureStruct.loadedFont.characters[i].x, textureStruct.loadedFont.characters[i].y, textureStruct.loadedFont.characters[i].width, textureStruct.loadedFont.characters[i].height);
+				xx++;;
+				if (xx == 7)
+				{
+					xx = 0;
+					yy++;
+				}
+			}
+			
+			//imguigml_set_cursor_pos(6, 6);
+			//imguigml_button("", 64, 64);
+			//imguigml_set_cursor_pos(72, 6);
+			//imguigml_button("", 64, 64);
+			//imguigml_set_cursor_pos(138, 6);
+			//imguigml_button("", 64, 64);
+			//imguigml_set_cursor_pos(204, 6);
+			//imguigml_button("", 64, 64);
+			//imguigml_set_cursor_pos(270, 6);
+			//imguigml_button("", 64, 64);
+			//imguigml_set_cursor_pos(336, 6);
+			//imguigml_button("", 64, 64);
+			//imguigml_set_cursor_pos(402, 6);
+			//imguigml_button("", 64, 64);
+			imguigml_end_child();
+		}
+		
+		// Footer
+		imguigml_set_cursor_pos(8, global.screenHeight - 20);
+		imguigml_text("BactaTank " + global.version);
+		
+		imguigml_set_cursor_pos(global.screenWidth - 96, global.screenHeight - 20);
+		imguigml_text("Created By Alub");
+		imguigml_end();
+		
+	}
+}
+
+#endregion
+
+#region Shortcuts
+
+function uiShortcuts(textureStruct)
+{
+	// Keyboard Shortcuts
+	if (keyboard_check(vk_control))
+	{
+		if (keyboard_check_pressed(ord("O")) && textureStruct.homeConfirmation == false)
+		{
+			var file = get_open_filename("TTGames Model (*.GHG)|*.ghg", "");
+			if (file != "")
+			{
+				// Change Cursor To Loading Cursor
+				window_set_cursor(cr_hourglass);
+					
+				// Destroy Old Model If It's Loaded
+				if (global.model != -1) destroyBactaTankModel(global.model);
+					
+				// Get File Name
+				var split = string_split(file + @"\", @"\");
+				global.filename = split[array_length(split)-1];
+					
+				// Load New Model
+				global.model = loadBactaTankModel(file);
+						
+				// Change Window Title
+				window_set_caption(global.filename + " - BactaTank");
+					
+				// Create New Directory
+				directory_create(global.tempDirectory + global.filename + @"\");
+					
+				// Set Selected
+				textureStruct.textureSelected = -1;
+				textureStruct.meshSelected = -1;
+				textureStruct.materialSelected = -1;
+					
+				// Change Cursor Back To Default
+				window_set_cursor(cr_default);
+			}
+		}
+		else if (keyboard_check_pressed(ord("S")) && global.model != -1 && textureStruct.homeConfirmation == false)
+		{
+			var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", "*.ghg");
+			if (file != "")
+			{
+				window_set_cursor(cr_hourglass);
+				exportBactaTankModel(global.model, file);
+				window_set_cursor(cr_default);
+			}
+		}
+		else if (keyboard_check_pressed(ord("H")) && global.model != -1 && textureStruct.homeConfirmation == false)
+		{
+			textureStruct.homeConfirmation = true;
+		}
+	}
+	
+	// Check If File Is Being Dragged Onto The App
+	var array = file_dropper_get_files([".ghg"]);
+	file_dropper_flush();
+
+	if (array_length(array) > 0 && file_exists(array[0]) && !textureStruct.homeConfirmation) {
+		// Change Cursor To Loading Cursor
+		window_set_cursor(cr_hourglass);
+		
+		// Destroy Old Model If It's Loaded
+		if (global.model != -1) destroyBactaTankModel(global.model);
+		
+		// Get File Name
+		var split = string_split(array[0] + @"\", @"\");
+		global.filename = split[array_length(split)-1];
+		
+		// Load New Model
+		global.model = loadBactaTankModel(array[0]);
+		
+		// Change Window Title
+		window_set_caption(global.filename + " - BactaTank");
+		
+		// Set Selected
+		textureStruct.textureSelected = -1;
+		textureStruct.meshSelected = -1;
+		textureStruct.materialSelected = -1;
+		
+		// Change Cursor Back To Default
+		window_set_cursor(cr_default);
 	}
 }
 

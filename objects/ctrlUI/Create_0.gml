@@ -37,6 +37,13 @@ textureStruct = {
 	meshSelected: -1,
 	meshSurface: -1,
 	materialSelected: -1,
+	
+	homeConfirmation: false,
+	
+	toolSelected: "",
+	
+	fontCharacterSelected: -1,
+	loadedFont: -1,
 }
 
 lastXPos = device_mouse_raw_x(0);

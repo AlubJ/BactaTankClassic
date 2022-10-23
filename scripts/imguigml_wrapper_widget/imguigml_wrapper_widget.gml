@@ -190,6 +190,77 @@ function imguigml_sprite() {
 }
 __ImguiIg(imguigml_sprite)
 
+
+///@function imguigml_sprite_part(_sprite_index, _sub_img, _x, _y, _ow, _oh, _width, _height, [_tint_r=1.0], [_tint_g=1.0], [_tint_b=1.0], [_tint_a=1.0], [_border_r=0.0], [_border_g=0.0], [_border_b=0.0], [_border_a=0.0])
+///@desc ImGui::Image()
+///@param {Real} _sprite_index         sprite
+///@param {Real} _sub_img              sprite_index
+///@param {Real} _x					   x
+///@param {Real} _y					   y
+///@param {Real} _ow				   ow
+///@param {Real} _oh				   oh
+///@param {Real} _width				   width will use sprite_get_width if undefined
+///@param {Real} _height			   height will use sprite_get_height if undefined
+///@param {Real} [_tint_r=1.0]         tint color r
+///@param {Real} [_tint_g=1.0]         tint color g
+///@param {Real} [_tint_b=1.0]         tint color b
+///@param {Real} [_tint_a=1.0]         tint color a
+///@param {Real} [_border_r=0.0]       border color r
+///@param {Real} [_border_g=0.0]       border color g
+///@param {Real} [_border_b=0.0]       border color b
+///@param {Real} [_border_a=0.0]       border color a
+function imguigml_sprite_part() {
+	var argi = 0,
+		sprite = argument[argi++],
+		sub_img = argument[argi++],
+		xx = (argument_count > 2) ? argument[argi++] : undefined,
+		yy = (argument_count > 3) ? argument[argi++] : undefined,
+		_width = (argument_count > 4) ? argument[argi++] : undefined,
+		_height = (argument_count > 5) ? argument[argi++] : undefined,
+		width = (argument_count > 6) ? argument[argi++] : undefined,
+		height = (argument_count > 7) ? argument[argi++] : undefined,
+		tintr = (argument_count > 8) ? argument[argi++] : 1.0, 
+		tintg = (argument_count > 9) ? argument[argi++] : 1.0, 
+		tintb = (argument_count > 10) ? argument[argi++] : 1.0, 
+		tinta = (argument_count > 11) ? argument[argi++] : 1.0,
+		borderr = (argument_count > 12)  ? argument[argi++] : 0,
+		borderg = (argument_count > 13)  ? argument[argi++] : 0,
+		borderb = (argument_count > 14) ? argument[argi++] : 0,
+		bordera = (argument_count > 15) ? argument[argi++] : 0;
+	
+	with(ImGuiGML) {
+	  var cached     = sr_sprite_cache_push_sprite(Sprite_cache, sprite, sub_img);
+	  var uvs        = sr_sprite_cache_get_uvs(Sprite_cache, cached);
+	  var texture_id = __imguigml_texture_id(sr_sprite_cache_get_surface(Sprite_cache, cached), EImGuiGML_TextureType.Surface);
+
+	  width  = is_undefined(width)  ? _width  : width;
+	  height = is_undefined(height) ? _height : height;
+  
+	  var uv1 = uvs[0],
+	      uv2 = uvs[1];
+			
+	  var u1 = uv1[0];
+	  var v1 = uv1[1];
+	  var u2 = uv2[0];
+	  var v2 = uv2[1];
+	  
+	  var partU1 = (xx / sprite_get_width(sprite));
+	  var partV1 = (yy / sprite_get_width(sprite));
+	  var partU2 = ((xx + _width) / sprite_get_width(sprite));
+	  var partV2 = ((yy + _height) / sprite_get_width(sprite));
+	  
+	  var finalU1 = u1 + ((u2 - u1) * partU1);
+	  var finalV1 = v1 + ((v2 - v1) * partV1);
+	  var finalU2 = u1 + ((u2 - u1) * partU2);
+	  var finalV2 = v1 + ((v2 - v1) * partV2);
+  
+		imguigml_push_id(string(sprite) + "_" + string(sub_img));
+	  __imguigml_image(texture_id, width, height, finalU1, finalV1, finalU2, finalV2, tintr, tintg, tintb, tinta, borderr, borderg, borderb, bordera);
+		imguigml_pop_id();
+	}
+}
+__ImguiIg(imguigml_sprite)
+
 ///@function imguigml_image_button(_texture_id, _size_x, _size_y, [_u0=0.0], [_v0=0.0], [_u1=1.0], [_v1=1.0], [_bg_r=0.0], [_bg_g=0.0], [_bg_b=0.0], [_bg_a=0.0], [_tint_r=1.0], [_tint_g=1.0], [_tint_b=1.0], [_tint_a=1.0])
 ///@desc ImGui::ImageButton()
 ///@param {Real} _texture_id           texture id

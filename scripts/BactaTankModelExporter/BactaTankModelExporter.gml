@@ -31,7 +31,7 @@ function exportBactaTankModel(modelStruct, filepath)
 	buffer_write(buffer, buffer_u32, 0); // Pre-NU20 Size
 	if (modelStruct.modelVersion == bactatankModelVersion.pcghgNU20Last) buffer_write(buffer, buffer_u16, modelStruct.nu20.textureCount); // Texture Count
 	
-	for (var i = 0; i < modelStruct.nu20.textureCount; i++)
+	for (var i = 0; i < array_length(modelStruct.nu20.textureMetaData); i++)
 	{
 		var textureMeta = modelStruct.nu20.textureMetaData[i];
 		if (modelStruct.modelVersion == bactatankModelVersion.pcghgNU20Last)
@@ -196,16 +196,29 @@ function editBactaTankNU20(modelStruct)
 
 function exportBactaTankMesh(modelStruct, meshIndex, exportFile)
 {
+	if (string_lower(filename_ext(exportFile)) == ".btank") exportBactaTankMeshBtank(modelStruct, meshIndex, exportFile);
+	if (string_lower(filename_ext(exportFile)) == ".obj") exportBactaTankMeshObj(modelStruct, meshIndex, exportFile);
+}
+
+#endregion
+
+#region Export .btank Mesh
+
+function exportBactaTankMeshBtank(modelStruct, meshIndex, exportFile)
+{
 	// Create Export Buffer
 	var buffer = buffer_create(1, buffer_grow, 1);
 	
 	// Mesh
 	var mesh = modelStruct.nu20.meshes[meshIndex];
 	
+	// Get Vertex Format
+	var vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[getBactaTankMeshMaterial(modelStruct, meshIndex)].vertexFormat);
+	
 	// Write Header
 	buffer_write(buffer, buffer_string, "BactaTank");
 	buffer_write(buffer, buffer_string, "PCGHG");
-	buffer_write(buffer, buffer_f32, 0.1);
+	buffer_write(buffer, buffer_f32, 0.2);
 	buffer_write(buffer, buffer_string, "Materials");
 	buffer_write(buffer, buffer_u32, 0);
 	buffer_write(buffer, buffer_string, "Meshes");
@@ -213,15 +226,74 @@ function exportBactaTankMesh(modelStruct, meshIndex, exportFile)
 	buffer_write(buffer, buffer_string, "MeshData");
 	
 	// Write Mesh Data
-	buffer_write(buffer, buffer_u16, mesh.vertexStride);
 	buffer_write(buffer, buffer_u32, mesh.triangleCount);
 	buffer_write(buffer, buffer_u32, mesh.vertexCount);
 	
+	// Write Mesh Attributes
+	buffer_write(buffer, buffer_string, "MeshAttributes");
+	buffer_write(buffer, buffer_u32, 4);
+	buffer_write(buffer, buffer_string, "Position");
+	buffer_write(buffer, buffer_string, "Normal");
+	buffer_write(buffer, buffer_string, "Colour");
+	buffer_write(buffer, buffer_string, "UV");
+	
 	// Write Vertex Buffer
 	buffer_write(buffer, buffer_string, "VertexBuffer");
-	buffer_write(buffer, buffer_u32, buffer_get_size(mesh.vertexBuffer));
-	buffer_copy(mesh.vertexBuffer, 0, buffer_get_size(mesh.vertexBuffer), buffer, buffer_tell(buffer));
-	buffer_seek(buffer, buffer_seek_relative, buffer_get_size(mesh.vertexBuffer));
+	
+	// Write Positions
+	buffer_write(buffer, buffer_string, "Position");
+	for (var i = 0; i < mesh.vertexCount; i++)
+	{
+		for (var j = 0; j < array_length(vertexFormat); j++)
+		{
+			if (vertexFormat[j].attribute == bactatankVertexAttributes.position)
+			{
+				buffer_write(buffer, buffer_f32, buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_f32));
+				buffer_write(buffer, buffer_f32, buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 4, buffer_f32));
+				buffer_write(buffer, buffer_f32, buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 8, buffer_f32));
+			}
+		}
+	}
+	
+	// Write Normals
+	buffer_write(buffer, buffer_string, "Normal");
+	for (var i = 0; i < mesh.vertexCount; i++)
+	{
+		for (var j = 0; j < array_length(vertexFormat); j++)
+		{
+			if (vertexFormat[j].attribute == bactatankVertexAttributes.normal)
+			{
+				buffer_write(buffer, buffer_u32, buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_u32));
+			}
+		}
+	}
+	
+	// Write Colour
+	buffer_write(buffer, buffer_string, "Colour");
+	for (var i = 0; i < mesh.vertexCount; i++)
+	{
+		for (var j = 0; j < array_length(vertexFormat); j++)
+		{
+			if (vertexFormat[j].attribute == bactatankVertexAttributes.colour)
+			{
+				buffer_write(buffer, buffer_u32, buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_u32));
+			}
+		}
+	}
+	
+	// Write UVs
+	buffer_write(buffer, buffer_string, "UV");
+	for (var i = 0; i < mesh.vertexCount; i++)
+	{
+		for (var j = 0; j < array_length(vertexFormat); j++)
+		{
+			if (vertexFormat[j].attribute == bactatankVertexAttributes.uv)
+			{
+				buffer_write(buffer, buffer_f32, buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_f32));
+				buffer_write(buffer, buffer_f32, buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 4, buffer_f32));
+			}
+		}
+	}
 	
 	// Write Index Buffer
 	buffer_write(buffer, buffer_string, "IndexBuffer");
@@ -230,6 +302,102 @@ function exportBactaTankMesh(modelStruct, meshIndex, exportFile)
 	buffer_seek(buffer, buffer_seek_relative, buffer_get_size(mesh.indexBuffer));
 	
 	// Buffer Save
+	buffer_save(buffer, exportFile);
+	buffer_delete(buffer);
+}
+
+#endregion
+
+#region Export .obj Mesh
+
+function exportBactaTankMeshObj(modelStruct, meshIndex, exportFile)
+{
+	// File String
+	var fileString = "# BactaTank\no Mesh" + string(meshIndex) + "\n";
+	
+	// Mesh
+	var mesh = modelStruct.nu20.meshes[meshIndex];
+	
+	// Get Vertex Format
+	var vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[getBactaTankMeshMaterial(modelStruct, meshIndex)].vertexFormat);
+	
+	// Write Vertex Positions
+	fileString += "# Positions\n";
+	for (var i = 0; i < mesh.vertexCount; i++)
+	{
+		for (var j = 0; j < array_length(vertexFormat); j++)
+		{
+			if (vertexFormat[j].attribute == bactatankVertexAttributes.position)
+			{
+				fileString += "v ";
+				fileString += string_format(buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_f32), 1, 5) + " ";
+				fileString += string_format(buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 4, buffer_f32), 1, 5) + " ";
+				fileString += string_format(buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 8, buffer_f32), 1, 5) + "\n";
+			}
+		}
+	}
+	
+	// Write Vertex Normals
+	fileString += "# Normals\n";
+	for (var i = 0; i < mesh.vertexCount; i++)
+	{
+		for (var j = 0; j < array_length(vertexFormat); j++)
+		{
+			if (vertexFormat[j].attribute == bactatankVertexAttributes.normal)
+			{
+				fileString += "vn ";
+				fileString += string_format(((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_u8)/255)*2)-1, 1, 5) + " ";
+				fileString += string_format(((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 1, buffer_u8)/255)*2)-1, 1, 5) + " ";
+				fileString += string_format(((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 2, buffer_u8)/255)*2)-1, 1, 5) + "\n";
+			}
+		}
+	}
+	
+	// Write Vertex Textures
+	fileString += "# UVs\n";
+	for (var i = 0; i < mesh.vertexCount; i++)
+	{
+		for (var j = 0; j < array_length(vertexFormat); j++)
+		{
+			if (vertexFormat[j].attribute == bactatankVertexAttributes.uv)
+			{
+				fileString += "vt ";
+				fileString += string_format(buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_f32), 1, 5) + " ";
+				fileString += string_format(1-buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 4, buffer_f32), 1, 5) + "\n";
+			}
+		}
+	}
+	
+	// Write Faces
+	fileString += "# Faces\n";
+	for (var i = 0; i < mesh.triangleCount; i++)
+	{
+		// Get Indices
+		var indices = [0, 0, 0];
+		indices[0] = buffer_peek(mesh.indexBuffer, i * 2, buffer_u16);
+		indices[1] = buffer_peek(mesh.indexBuffer, i * 2 + 2, buffer_u16);
+		indices[2] = buffer_peek(mesh.indexBuffer, i * 2 + 4, buffer_u16);
+		
+		// Write Face
+		if (i % 2 == 0)
+		{
+			fileString += "f " +
+			string(indices[0] - mesh.vertexCount) + "/" + string(indices[0] - mesh.vertexCount) + "/" + string(indices[0] - mesh.vertexCount) + " " +
+			string(indices[1] - mesh.vertexCount) + "/" + string(indices[1] - mesh.vertexCount) + "/" + string(indices[1] - mesh.vertexCount) + " " +
+			string(indices[2] - mesh.vertexCount) + "/" + string(indices[2] - mesh.vertexCount) + "/" + string(indices[2] - mesh.vertexCount) + "\n";
+		}
+		else
+		{
+			fileString += "f " +
+			string(indices[2] - mesh.vertexCount) + "/" + string(indices[2] - mesh.vertexCount) + "/" + string(indices[2] - mesh.vertexCount) + " " +
+			string(indices[1] - mesh.vertexCount) + "/" + string(indices[1] - mesh.vertexCount) + "/" + string(indices[1] - mesh.vertexCount) + " " +
+			string(indices[0] - mesh.vertexCount) + "/" + string(indices[0] - mesh.vertexCount) + "/" + string(indices[0] - mesh.vertexCount) + "\n";
+		}
+	}
+	
+	// Save Buffer
+	var buffer = buffer_create(string_length(fileString), buffer_fixed, 1);
+	buffer_write(buffer, buffer_text, fileString);
 	buffer_save(buffer, exportFile);
 	buffer_delete(buffer);
 }
