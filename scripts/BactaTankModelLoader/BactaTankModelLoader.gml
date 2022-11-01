@@ -42,6 +42,22 @@ function initBactaTank()
 		half2,
 	}
 	global.__attributeTypes = ["Float 2", "Float 3", "Byte 4", "Half 2"];
+	
+	// DXT Compressions
+	global.DXTCompression = ["", "DXT1", "", "", "DXT3", "", "DXT5"];
+	
+	// Shader Settings
+	#macro bactatankShaderLightDirection			shader_get_uniform(defaultShading, "lightDirection")
+	#macro bactatankShaderLightColour				shader_get_uniform(defaultShading, "lightColour")
+	#macro bactatankShaderBlendColour				shader_get_uniform(defaultShading, "colour")
+	#macro bactatankShaderInvView					shader_get_uniform(defaultShading, "invView")
+	#macro bactatankShaderShiny						shader_get_uniform(defaultShading, "shiny")
+	#macro bactatankShaderUseTexture				shader_get_uniform(defaultShading, "useTexture")
+	#macro bactatankShaderUseLighting				shader_get_uniform(defaultShading, "useLighting")
+	#macro bactatankShaderUseNormalMap				shader_get_uniform(defaultShading, "useNormalMap")
+	#macro bactatankShaderNormalMap					shader_get_sampler_index(defaultShading, "normalMap")
+	#macro bactatankShaderCubeMap0					shader_get_sampler_index(defaultShading, "cubeMap0")
+	#macro bactatankShaderCubeMap1					shader_get_sampler_index(defaultShading, "cubeMap1")
 }
 
 #endregion
@@ -62,6 +78,8 @@ function loadBactaTankModel(model)
 	variable_struct_set(modelStruct, "modelVersion", modelVersion)
 	
 	// Copy NU20 into separate buffer (NU20 isn't completely documented meaning we can't recreate it yet)
+	var nu20Offset = buffer_tell(buffer);
+	variable_struct_set(modelStruct, "nu20Offset", nu20Offset);
 	var nu20Size = -buffer_peek(buffer, buffer_tell(buffer) + 4, buffer_u32);
 	var nu20Buffer = buffer_create(nu20Size, buffer_fixed, 1);
 	buffer_copy(buffer, buffer_tell(buffer), nu20Size, nu20Buffer, 0);
@@ -78,7 +96,8 @@ function loadBactaTankModel(model)
 	
 	// Read Textures
 	var textures = readBactaTankTextures(buffer, modelStruct);
-	variable_struct_set(modelStruct, "textures", textures);
+	variable_struct_set(modelStruct, "textures", textures[0]);
+	variable_struct_set(modelStruct, "textureSprites", textures[1]);
 	show_debug_message("<BactaTank Model Loader> Textures Read!");
 	
 	// Read Buffers
@@ -186,6 +205,7 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 		
 		var textureWidth = buffer_read(buffer, buffer_u32);
 		var textureHeight = buffer_read(buffer, buffer_u32);
+		var textureCompression = 0;
 		var textureSize = 0;
 		var textureIsCubemap = false;
 		
@@ -199,12 +219,14 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 			// Check If Texture Is Cubemap Or Not
 			if (textureIsCubemap)
 			{
-				i += 5;
 				tempOffset = tempOffset + 20;
 			}
 			
+			// Read DXT Compression
+			textureCompression = buffer_read(buffer, buffer_u32);
+			
 			// Seek to size
-			buffer_seek(buffer, buffer_seek_relative, 0x0c);
+			buffer_seek(buffer, buffer_seek_relative, 0x08);
 			textureSize = buffer_read(buffer, buffer_u32);
 		}
 		else
@@ -220,14 +242,17 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 		
 		// Texture Struct
 		textureMetaData[currentTexture] = {
-			offset:		textureOffset,
-			width:		textureWidth,
-			height:		textureHeight,
-			size:		textureSize,
-			isCubemap:	textureIsCubemap,
+			index:			i,
+			offset:			textureOffset,
+			width:			textureWidth,
+			height:			textureHeight,
+			compression:	textureCompression,
+			size:			textureSize,
+			isCubemap:		textureIsCubemap,
 		}
 		
 		// Increase Current Texture Index
+		if (textureIsCubemap) i += 5;
 		currentTexture++;
 		
 		// Seek back to start
@@ -560,8 +585,10 @@ function readBactaTankLayers(buffer, boneCount)
 function readBactaTankTextures(buffer, modelStruct)
 {
 	show_debug_message("<BactaTank Model Loader> Loading " + string(array_length(modelStruct.nu20.textureMetaData)) + " Textures");
+	
 	// Textures Array
-	var textures = [];
+	var textures = array_create(64, -1);
+	var textureSprites = array_create(64, -1);
 	
 	// Textures Loop
 	for (var i = 0; i < array_length(modelStruct.nu20.textureMetaData); i++)
@@ -580,22 +607,23 @@ function readBactaTankTextures(buffer, modelStruct)
 			modelStruct.nu20.textureMetaData[i].width = textureWidth;
 			modelStruct.nu20.textureMetaData[i].height = textureHeight;
 			modelStruct.nu20.textureMetaData[i].size = textureSize;
+			modelStruct.nu20.textureMetaData[i].compression = array_get_index(global.DXTCompression, buffer_peek(buffer, buffer_tell(buffer)+0x54, buffer_string));
 		}
 		
 		// Texture Buffer
-		textures[i] = buffer_create(textureSize, buffer_fixed, 1);
-		buffer_copy(buffer, buffer_tell(buffer), textureSize, textures[i], 0);
+		textures[modelStruct.nu20.textureMetaData[i].index] = buffer_create(textureSize, buffer_fixed, 1);
+		buffer_copy(buffer, buffer_tell(buffer), textureSize, textures[modelStruct.nu20.textureMetaData[i].index], 0);
 		
 		// Get Textures File Name For Saving
-		var name = buffer_sha1(textures[i], 0, textureSize);
+		var name = buffer_sha1(textures[modelStruct.nu20.textureMetaData[i].index], 0, textureSize);
 		modelStruct.nu20.textureMetaData[i].file = global.tempDirectory + name;
 		
 		// Convert DDS to PNG
 		var sprite;
 		if (!file_exists(global.tempDirectory + @"\_textures\" + name + ".png"))
 		{
-			sprite = readBactaTankTexture(textures[i]);
-			sprite_save(textures[i], 0, global.tempDirectory + @"\_textures\" + name + ".png")
+			sprite = readBactaTankTexture(textures[modelStruct.nu20.textureMetaData[i].index]);
+			sprite_save(sprite, 0, global.tempDirectory + @"\_textures\" + name + ".png");
 		}
 		else
 		{
@@ -603,14 +631,14 @@ function readBactaTankTextures(buffer, modelStruct)
 		}
 		
 		// Add Sprite
-		modelStruct.nu20.textureMetaData[i].sprite = sprite;
+		textureSprites[modelStruct.nu20.textureMetaData[i].index] = sprite;
 		
 		// Seek Forward Past Texture
 		buffer_seek(buffer, buffer_seek_relative, textureSize);
 	}
 	
 	// Return Textures
-	return textures;
+	return [textures, textureSprites];
 }
 
 #endregion
@@ -767,7 +795,7 @@ function generateBactaTankVBOs(modelStruct)
 			buffer_delete(cachedMesh);
 		}
 		
-		show_debug_message("Mesh " + string(i) + " took " + string(get_timer() - timer) + "ms to generate a VBO");
+		show_debug_message("Mesh " + string(i) + " took " + string((get_timer() - timer) / 1000) + "ms to generate a VBO");
 		
 		// Freeze VBO For Better Performance
 		vertex_freeze(currentVertexBuffer);
@@ -802,8 +830,9 @@ function destroyBactaTankModel(modelStruct)
 	// Delete Textures
 	for (var i = 0; i < array_length(modelStruct.textures); i++)
 	{
+		if (modelStruct.textures[i] == -1 || modelStruct.textureSprites[i] == -1) continue;
 		buffer_delete(modelStruct.textures[i]);
-		sprite_delete(modelStruct.nu20.textureMetaData[i].sprite);
+		sprite_delete(modelStruct.textureSprites[i]);
 	}
 	
 	// Delete Meshes
@@ -828,14 +857,47 @@ function drawBactaTankMesh(modelStruct, meshIndex)
 	var material = getBactaTankMeshMaterial(modelStruct, meshIndex);
 	
 	var texture = -1;
-	if (material != -1 && modelStruct.nu20.materials[material].textureID != -1 && modelStruct.nu20.materials[material].textureID < array_length(modelStruct.textures)) texture = sprite_get_texture(modelStruct.nu20.textureMetaData[modelStruct.nu20.materials[material].textureID].sprite, 0);
+	var normal = -1;
+	if (material != -1 && modelStruct.nu20.materials[material].textureID != -1 && modelStruct.nu20.materials[material].textureID < array_length(modelStruct.textureSprites)) texture = sprite_get_texture(modelStruct.textureSprites[modelStruct.nu20.materials[material].textureID], 0);
+	if (material != -1 && modelStruct.nu20.materials[material].normalID != -1 && modelStruct.nu20.materials[material].normalID < array_length(modelStruct.textureSprites)) normal = sprite_get_texture(modelStruct.textureSprites[modelStruct.nu20.materials[material].normalID], 0);
 		
-	// Submit Mesh
-	//gpu_set_cullmode(cull_counterclockwise);
+	// Shading
 	shader_set(defaultShading);
+	
+	// Shader Flags
+	shader_set_uniform_f(bactatankShaderUseNormalMap, (modelStruct.nu20.materials[material].shaderFlags & 1) >= 1);
+	shader_set_uniform_f(bactatankShaderShiny, (modelStruct.nu20.materials[material].shaderFlags & 8) >= 1);
+	shader_set_uniform_f(bactatankShaderUseLighting, (modelStruct.nu20.materials[material].shaderFlags & 4096) >= 1);
+	
+	// Shader Lighting
+	shader_set_uniform_f(bactatankShaderLightDirection, 1, -1, 1);
+	shader_set_uniform_f(bactatankShaderLightColour, .9, .9, .9, 1);
+	
+	// Shader Blend Colour
+	if (texture == -1) shader_set_uniform_f(bactatankShaderBlendColour, modelStruct.nu20.materials[material].colour[0], modelStruct.nu20.materials[material].colour[1], modelStruct.nu20.materials[material].colour[2], 1);
+	else shader_set_uniform_f(bactatankShaderBlendColour, 1, 1, 1, 1);
+	
+	// Set Inverse View Matrix
+	shader_set_uniform_matrix_array(bactatankShaderInvView, inverse_matrix(matrix_get(matrix_view)));
+	
+	// Shader Textures
+	texture_set_stage(bactatankShaderCubeMap0, sprite_get_texture(cubemapShine, 0));
+	texture_set_stage(bactatankShaderCubeMap1, sprite_get_texture(cubemapBlack, 0));
+	if (normal != -1) texture_set_stage(bactatankShaderNormalMap, normal);
+	
+	// Backface Culling
+	//if (modelStruct.nu20.materials[material].alphaBlend & 8192) gpu_set_cullmode(cull_noculling);
+	//else if (modelStruct.nu20.materials[material].alphaBlend & 4096) gpu_set_cullmode(cull_counterclockwise);
+	//else gpu_set_cullmode(cull_clockwise);
+	
+	// Submit Mesh
 	if (mesh.vertexBufferObject != -1) vertex_submit(mesh.vertexBufferObject, pr_trianglestrip, texture);
+	
+	// Reset Backface Culling
+	gpu_set_cullmode(cull_noculling);
+	
+	// Reset Shader
 	shader_reset();
-	//gpu_set_cullmode(cull_noculling);
 }
 
 #endregion

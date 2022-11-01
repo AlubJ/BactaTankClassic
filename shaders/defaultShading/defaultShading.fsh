@@ -10,20 +10,17 @@ uniform vec3 lightDirection;
 uniform vec4 lightColour;
 uniform vec4 colour;
 uniform float shiny;
+uniform float useTexture;
+uniform float useLighting;
+uniform float useNormalMap;
 
 // Load Cubemap Textures
 uniform sampler2D cubeMap0;
 uniform sampler2D cubeMap1;
-uniform sampler2D cubeMap2;
-uniform sampler2D cubeMap3;
-uniform sampler2D cubeMap4;
-uniform sampler2D cubeMap5;
+uniform sampler2D normalMap;
 
 // View Matrix
 uniform mat4 invView;
-
-// Flip Normals? (Work around for static meshes)
-uniform float flipNormals;
 
 // In from Vertex Shader
 varying vec3 v_worldNormal;
@@ -85,59 +82,74 @@ vec4 getCubeMapColor(vec3 dir){
     
     //Read color value from corresponding surface
     if (samplerIndex == 0){
-        return texture2D(cubeMap0, uv);
+        return texture2D(cubeMap1, uv);
     }else if (samplerIndex == 1){
         return texture2D(cubeMap1, uv);
     }else if (samplerIndex == 2){
-        return texture2D(cubeMap2, uv);
+        return texture2D(cubeMap0, uv);
     }else if (samplerIndex == 3){
-        return texture2D(cubeMap3, uv);
+        return texture2D(cubeMap1, uv);
     }else if (samplerIndex == 4){
-        return texture2D(cubeMap4, uv);
+        return texture2D(cubeMap1, uv);
     }else {
-        return texture2D(cubeMap5, uv);
+        return texture2D(cubeMap1, uv);
     }
 }
 
 void main()
 {
 	// Original Colour
-    vec4 startColour = v_Colour * texture2D(gm_BaseTexture, v_Texcoord);
+    vec4 startColour = colour * texture2D(gm_BaseTexture, v_Texcoord);
 	
+	// Discard Alpha
 	if (startColour.a < 0.5) discard;
 	
 	// Ambiant
     vec4 ambient = vec4(0.25, 0.25, 0.25, 1.);
 	
-	// Diffuse Lighting
+	// Default Normal
 	vec3 normal = v_worldNormal;
-	if (flipNormals == 1.) normal = vec3(-v_worldNormal.x, -v_worldNormal.y, -v_worldNormal.z);
-    vec3 lightDir = normalize(-vec3(1., -1., 1.));
-	vec4 diffuse = vec4(1., 1., 1., 1.) * max(dot(vec3(normal.x, normal.y, normal.z), lightDir), 0.);
+	vec3 viewNormal = v_viewNorm.xyz;
 	
-	/// Cubemap Reflections
+	// Normal Map
+	if (useNormalMap == 4.)
+	{
+		vec4 normalTexture = texture2D(normalMap, v_Texcoord);
+		normal = vec3(normalTexture.a, normalTexture.g, normalTexture.b);
+		normal = -normalize(normal * 2.0 - 1.0);
+		normal = v_worldNormal * normal;
+		viewNormal = -v_viewNorm.xyz * normal;
+	}
+	
+	// Diffuse Lighting
+    vec3 lightDir = normalize(-lightDirection);
+	vec4 diffuse = lightColour * max(dot(vec3(normal.x, normal.y, normal.z), lightDir), 0.);
+	
+	// Cubemap Reflections
     // (View space) vector from camera to fragment (cam pos in view space is (0,0,0))
-    //vec3 d = v_viewPos.xyz;
+    vec3 d = v_viewPos.xyz;
     
-    //Normal
-	//vec3 norm = vec3(-v_viewNorm.x, -v_viewNorm.y, -v_viewNorm.z);
-    ///vec3 n = normalize(norm.xyz);
-	//if (flipNormals == 1.)
-	//{
-	//	vec3 norm = vec3(-v_viewNorm.x, -v_viewNorm.y, -v_viewNorm.z);
-	//	n = normalize(v_viewNorm.xyz);
-	//}
+    // Normal
+	vec3 norm = vec3(-viewNormal.x, -viewNormal.y, -viewNormal.z);
+    vec3 n = normalize(norm.xyz);
     
     // Reflect d around normal n
-    //vec3 view_r = d - 2.0 * dot(d, n) * n;
+    vec3 view_r = d - 2.0 * dot(d, n) * n;
     
-    //Transform reflection vector to world space using inverse view matrix
-    //vec4 world_r = invView * vec4(view_r.xyz, 0.0);
+    // Transform reflection vector to world space using inverse view matrix
+    vec4 world_r = invView * vec4(view_r.xyz, 0.0);
     
     //Read cube map color from reflection vector and interpolate between reflected color and texture color.
-	//vec4 cubeMap = getCubeMapColor(world_r.xyz);
+	vec4 cubeMap = getCubeMapColor(world_r.xyz);
 	
 	// Output
-    vec4 fragColour = startColour * vec4((ambient + diffuse).rgb, startColour.a);
+    vec4 fragColour = startColour;
+	
+	// Lighting
+	if (useLighting == .0) fragColour *= vec4((ambient + diffuse).rgb, startColour.a);
+	
+	// Shiny
+	if (shiny == 1.) fragColour += (cubeMap * vec4((vec4(0., 0., 0., 1.) + diffuse).rgb, startColour.a));
+	
 	gl_FragColor = fragColour;
 }

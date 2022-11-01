@@ -25,9 +25,11 @@
     0x0B  -  instance ID reference
 */
 
-function snap_to_binary(_ds)
+function snap_to_binary(_ds, _file)
 {
-    return (new __snap_to_binary_parser(_ds)).buffer;
+	var buff = (new __snap_to_binary_parser(_ds)).buffer;
+	buffer_save(buff, _file);
+	buffer_delete(buff);
 }
 
 function __snap_to_binary_parser(_ds) constructor

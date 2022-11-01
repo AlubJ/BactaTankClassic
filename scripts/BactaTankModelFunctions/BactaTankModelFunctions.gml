@@ -25,17 +25,18 @@ function replaceBactaTankTexture(modelStruct, textureIndex, textureFile)
 	sprite_save(sprite, 0, global.tempDirectory + @"\_textures\" + name + ".png")
 						
 	// Free Memory
-	var oldSpriteIndex = modelStruct.nu20.textureMetaData[textureIndex].sprite;
-	buffer_delete(modelStruct.textures[textureIndex]);
+	var oldSpriteIndex = modelStruct.textureSprites[modelStruct.nu20.textureMetaData[textureIndex].index];
+	buffer_delete(modelStruct.textures[modelStruct.nu20.textureMetaData[textureIndex].index]);
 	
 	// Set Buffer
-	modelStruct.textures[textureIndex] = buffer;
+	modelStruct.textures[modelStruct.nu20.textureMetaData[textureIndex].index] = buffer;
 	modelStruct.nu20.textureMetaData[textureIndex].width = newWidth;
 	modelStruct.nu20.textureMetaData[textureIndex].height = newHeight;
 	modelStruct.nu20.textureMetaData[textureIndex].size = newSize;
+	modelStruct.nu20.textureMetaData[textureIndex].compression = array_get_index(global.DXTCompression, buffer_peek(buffer, 0x54, buffer_string));
 	
 	// Add Sprite
-	modelStruct.nu20.textureMetaData[textureIndex].sprite = sprite;
+	modelStruct.textureSprites[modelStruct.nu20.textureMetaData[textureIndex].index] = sprite;
 	sprite_delete(oldSpriteIndex);
 }
 

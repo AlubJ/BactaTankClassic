@@ -143,13 +143,34 @@ function uiAlphaMainScreen(textureStruct)
 				// Save GHG
 				if (imguigml_menu_item("Save GHG", "Ctrl+S", false, global.model == -1 ? false : true))
 				{
-					var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", "*.ghg");
+					var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", global.filename);
 					if (file != "")
 					{
 						window_set_cursor(cr_hourglass);
 						exportBactaTankModel(global.model, file);
 						window_set_cursor(cr_default);
 					}
+				}
+				
+				//imguigml_separator();
+				
+				//// Export Model
+				//if (imguigml_menu_item("Export Model", "Ctrl+E", false, global.model == -1 ? false : true))
+				//{
+				//	var file = get_save_filename("Wavefront Object (*.obj)|*.obj", "*.obj");
+				//	if (file != "")
+				//	{
+				//		window_set_cursor(cr_hourglass);
+				//		exportBactaTankObj(global.model, file);
+				//		window_set_cursor(cr_default);
+				//	}
+				//}
+				
+				imguigml_separator();
+				
+				if (imguigml_menu_item("Preferences"))
+				{
+					textureStruct.settingsPage = true;
 				}
 				
 				imguigml_separator();
@@ -213,7 +234,7 @@ function uiAlphaMainScreen(textureStruct)
 					var mainCursor = imguigml_get_cursor_pos();
 				
 					// Textures List Box
-					for (var i = 0; i < array_length(global.model.textures); i++)
+					for (var i = 0; i < array_length(global.model.nu20.textureMetaData); i++)
 					{
 						// Position Selectable
 						imguigml_set_cursor_pos(mainCursor[0], mainCursor[1] + ((i) * 76));
@@ -230,11 +251,11 @@ function uiAlphaMainScreen(textureStruct)
 					
 						// Main Texture
 						imguigml_set_cursor_pos(cursor[0] + 4, cursor[1] + 4);
-						imguigml_sprite(global.model.nu20.textureMetaData[i].sprite, 0, 64, 64, 1, 1, 1, 1, 0, 0, 0, 0);
+						imguigml_sprite(global.model.textureSprites[global.model.nu20.textureMetaData[i].index], 0, 64, 64, 1, 1, 1, 1, 0, 0, 0, 0);
 					
 						// Texture Text
 						imguigml_set_cursor_pos(cursor[0] + 76, cursor[1] + 29);
-						imguigml_text("Texture " + string(i));
+						imguigml_text("Texture " + string(global.model.nu20.textureMetaData[i].index));
 					}
 				}
 				imguigml_end_child();
@@ -255,7 +276,7 @@ function uiAlphaMainScreen(textureStruct)
 				
 					// Main Texture
 					imguigml_set_cursor_pos(cursor[0] + 4, cursor[1] + 4);
-					imguigml_sprite(global.model.nu20.textureMetaData[textureStruct.textureSelected].sprite, 0, 202, 202, 1, 1, 1, 1, 0, 0, 0, 0);
+					imguigml_sprite(global.model.textureSprites[global.model.nu20.textureMetaData[textureStruct.textureSelected].index], 0, 202, 202, 1, 1, 1, 1, 0, 0, 0, 0);
 				
 					// Export Texture Button
 					imguigml_set_cursor_pos(cursor[0] + 214, cursor[1] + 8);
@@ -267,7 +288,7 @@ function uiAlphaMainScreen(textureStruct)
 						{
 							// Export Texture
 							window_set_cursor(cr_hourglass);
-							buffer_save(global.model.textures[textureStruct.textureSelected], file);
+							buffer_save(global.model.textures[global.model.nu20.textureMetaData[textureStruct.textureSelected].index], file);
 							window_set_cursor(cr_default);
 						}
 					}
@@ -319,13 +340,25 @@ function uiAlphaMainScreen(textureStruct)
 					imguigml_set_cursor_pos(cursor[0] + 222, cursor[1] + 112);
 					imguigml_text("Buffer Size:");
 					imguigml_set_cursor_pos(cursor[0] + 342, cursor[1] + 112);
-					imguigml_text(global.model.nu20.textureMetaData[textureStruct.textureSelected].size);
+					imguigml_text("0x" + string_hex(global.model.nu20.textureMetaData[textureStruct.textureSelected].size, 8));
+				
+					// Compression
+					imguigml_set_cursor_pos(cursor[0] + 222, cursor[1] + 126);
+					imguigml_text("Compression Type:");
+					imguigml_set_cursor_pos(cursor[0] + 342, cursor[1] + 126);
+					imguigml_text(global.DXTCompression[global.model.nu20.textureMetaData[textureStruct.textureSelected].compression]);
 				
 					// Metadata Offset
-					imguigml_set_cursor_pos(cursor[0] + 222, cursor[1] + 126);
+					imguigml_set_cursor_pos(cursor[0] + 222, cursor[1] + 140);
 					imguigml_text("Metadata Offset:");
-					imguigml_set_cursor_pos(cursor[0] + 342, cursor[1] + 126);
-					imguigml_text(global.model.nu20.textureMetaData[textureStruct.textureSelected].offset);
+					imguigml_set_cursor_pos(cursor[0] + 342, cursor[1] + 140);
+					imguigml_text("0x" + string_hex(global.model.nu20Offset + global.model.nu20.textureMetaData[textureStruct.textureSelected].offset, 8));
+					if (imguigml_is_item_hovered())
+					{
+						window_set_cursor(cr_handpoint);
+						if (mouse_check_button_pressed(mb_left)) clipboard_set_text(string_hex(global.model.nu20Offset + global.model.nu20.textureMetaData[textureStruct.textureSelected].offset, 8));
+					}
+					else window_set_cursor(cr_default);
 				}
 				else
 				{
@@ -439,7 +472,7 @@ function uiAlphaMainScreen(textureStruct)
 				
 					// Replace Mesh Button
 					imguigml_set_cursor_pos(cursor[0] + 214, cursor[1] + 36);
-					if (imguigml_button("Replace Mesh", 264, 24))
+					if (imguigml_button("Replace Mesh", 264, 24) && (global.model.nu20.meshes[textureStruct.meshSelected].bones[0] == -1 || global.settings.advancedMode))
 					{
 						// Get Open File Name For Replacement
 						var file = get_open_filename("BactaTank Model (*.btank)|*.btank", "");
@@ -505,7 +538,13 @@ function uiAlphaMainScreen(textureStruct)
 					imguigml_set_cursor_pos(cursor[0] + 222, cursor[1] + 156);
 					imguigml_text("Metadata Offset:");
 					imguigml_set_cursor_pos(cursor[0] + 342, cursor[1] + 156);
-					imguigml_text(global.model.nu20.meshes[textureStruct.meshSelected].offset);
+					imguigml_text("0x" + string_hex(global.model.nu20Offset + global.model.nu20.meshes[textureStruct.meshSelected].offset, 8));
+					if (imguigml_is_item_hovered())
+					{
+						window_set_cursor(cr_handpoint);
+						if (mouse_check_button_pressed(mb_left)) clipboard_set_text(string_hex(global.model.nu20Offset + global.model.nu20.meshes[textureStruct.meshSelected].offset, 8));
+					}
+					else window_set_cursor(cr_default);
 					
 				
 					// Material Offset
@@ -577,7 +616,7 @@ function uiAlphaMainScreen(textureStruct)
 					imguigml_sprite(sprTransparent, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					
 					imguigml_set_cursor_pos(cursor[0] + 4, cursor[1] + 4);
-					if (textureID != -1) imguigml_sprite(global.model.nu20.textureMetaData[textureID].sprite, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
+					if (textureID != -1) imguigml_sprite(global.model.textureSprites[textureID], 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					else imguigml_sprite(sprQuestionMark, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					
 					// Normal Texture
@@ -585,7 +624,7 @@ function uiAlphaMainScreen(textureStruct)
 					imguigml_sprite(sprTransparent, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					
 					imguigml_set_cursor_pos(cursor[0] + 107, cursor[1] + 4);
-					if (normalID != -1) imguigml_sprite(global.model.nu20.textureMetaData[normalID].sprite, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
+					if (normalID != -1) imguigml_sprite(global.model.textureSprites[normalID], 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					else imguigml_sprite(sprQuestionMark, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					
 					// Shine Texture
@@ -593,7 +632,7 @@ function uiAlphaMainScreen(textureStruct)
 					imguigml_sprite(sprTransparent, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					
 					imguigml_set_cursor_pos(cursor[0] + 57, cursor[1] + 107);
-					if (shineID != -1) imguigml_sprite(global.model.nu20.textureMetaData[shineID].sprite, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
+					if (shineID != -1) imguigml_sprite(global.model.textureSprites[shineID], 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					else imguigml_sprite(sprQuestionMark, 0, 99, 99, 1, 1, 1, 1, 0, 0, 0, 0);
 					
 					// Edit Text
@@ -767,19 +806,22 @@ function uiAlphaHomeScreen(texureStruct)
 	
 	if (ret[0])
 	{
-		//if (imguigml_begin_menu_bar())
-		//{
-		//	if (imguigml_begin_menu("Tools"))
-		//	{
-		//		if (imguigml_menu_item("Font Editor"))
-		//		{
-		//			textureStruct.toolSelected = "fe";
-		//		}
-		//		imguigml_end_menu();
-		//	}
+		if (imguigml_begin_menu_bar())
+		{
+			if (imguigml_menu_item("Preferences"))
+			{
+				textureStruct.settingsPage = true;
+			}
 			
-		//	imguigml_end_menu_bar();
-		//}
+			if (imguigml_begin_menu("Help"))
+			{
+				
+				imguigml_end_menu();
+			}
+			
+			imguigml_end_menu_bar();
+		}
+		
 		// Logo
 		imguigml_set_cursor_pos(58, 32);
 		imguigml_sprite(sprBactaTankLogoBeta, 0, 128, 128);
@@ -942,6 +984,81 @@ function uiAlphaGoHomeScreen(textureStruct)
 
 #endregion
 
+#region Alpha Preferences Screen
+
+function uiAlphaPreferencesScreen(textureStruct)
+{
+	// ImGUI Main Window
+	imguigml_set_next_window_size(global.screenWidth, global.screenHeight, EImGui_Cond.Always);
+	imguigml_set_next_window_pos(0, 0, EImGui_Cond.Once);
+	
+	var ret = imguigml_begin("AlphaPreferences", undefined, EImGui_WindowFlags.NoMove | EImGui_WindowFlags.NoResize | EImGui_WindowFlags.NoTitleBar | EImGui_WindowFlags.NoScrollbar| EImGui_WindowFlags.NoScrollWithMouse);
+	
+	if (ret[0] && textureStruct.settingsPage == true)
+	{
+		imguigml_set_cursor_pos(122, 200);
+		if (imguigml_checkbox("##hiddenAdvancedMode", global.settings.advancedMode)[0]) global.settings.advancedMode = !global.settings.advancedMode;
+		imguigml_set_cursor_pos(150, 204);
+		imguigml_text("Advanced Mode");
+		imguigml_same_line();
+		imguigml_tooltip("Advanced Mode should only be used by experienced modders.\nAdvanced Mode can cause models to become corrupted and\nit is YOUR fault if this happens!");
+		
+		imguigml_set_cursor_pos(122, 228);
+		if (imguigml_checkbox("##hiddenSmoothCamera", global.settings.cameraSmooth)[0]) global.settings.cameraSmooth = !global.settings.cameraSmooth;
+		imguigml_set_cursor_pos(150, 232);
+		imguigml_text("Smooth Camera");
+		
+		var AALevel = ["No Anti-Aliasing", "2x", "4x", "8x"];
+		imguigml_set_cursor_pos(122, 256);
+		imguigml_text("AA Level:");
+		imguigml_set_cursor_pos(122, 274);
+		imguigml_push_item_width(256);
+		var index = 0;
+		if (global.settings.AALevel == 2) index = 1;
+		if (global.settings.AALevel == 4) index = 2;
+		if (global.settings.AALevel == 8) index = 3;
+		var ret = imguigml_combo("##hiddenAA", index, AALevel);
+		if (ret[0])
+		{
+			if (ret[1] == 0) global.settings.AALevel = 0;
+			if (ret[1] == 1) global.settings.AALevel = 2;
+			if (ret[1] == 2) global.settings.AALevel = 4;
+			if (ret[1] == 3) global.settings.AALevel = 8;
+			display_reset(global.settings.AALevel, true);
+		}
+		
+		imguigml_set_cursor_pos(122, 302);
+		imguigml_text("Watermark:");
+		imguigml_set_cursor_pos(122, 320);
+		imguigml_push_item_width(256);
+		var ret = imguigml_input_text("##hiddenWaterMark", global.settings.watermark, 100);
+		if (ret[0])
+		{
+			global.settings.watermark = ret[1];
+		}
+		
+		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
+		imguigml_set_cursor_pos(203, 348);
+		if (imguigml_button("Clear Cache", 96, 24))
+		{
+			directory_destroy(global.tempDirectory + @"_textures\");
+			directory_destroy(global.tempDirectory + @"_meshes\");
+		}
+		
+		imguigml_set_cursor_pos(203, 376);
+		if (imguigml_button("Save", 96, 24))
+		{
+			snap_to_binary(global.settings, "settings.bin");
+			textureStruct.settingsPage = false;
+		}
+		imguigml_push_style_color(EImGui_Col.Button, 1, 1, 1, 0);
+		
+		imguigml_end();
+	}
+}
+
+#endregion
+
 #region Font Editor
 
 function uiFontEditor(textureStruct)
@@ -1089,7 +1206,7 @@ function uiShortcuts(textureStruct)
 		}
 		else if (keyboard_check_pressed(ord("S")) && global.model != -1 && textureStruct.homeConfirmation == false)
 		{
-			var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", "*.ghg");
+			var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", global.filename);
 			if (file != "")
 			{
 				window_set_cursor(cr_hourglass);

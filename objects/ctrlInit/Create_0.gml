@@ -10,10 +10,9 @@ gpu_set_tex_min_mip(0);
 gpu_set_tex_max_mip(4);
 gpu_set_tex_mip_bias(0);
 gpu_set_tex_mip_filter(tf_anisotropic);
-display_reset(8, true);
 
 // Default Vertex Format
-vertex_format_begin(); // Standard Static Vertex Format
+vertex_format_begin();
 vertex_format_add_position_3d();
 vertex_format_add_normal();
 vertex_format_add_texcoord();
@@ -54,12 +53,11 @@ for(var i = 0; room_exists(i); i++)
 initBactaTank();
 
 // Create Cache Folder
-global.tempDirectory = temp_directory + @"BactaTank\_cache\";
+global.tempDirectory = temp_directory + @"BactaTankClassic\_cache\";
 directory_create(global.tempDirectory);
 
 // Font
 global.font = -1;
-
 
 #endregion
 
@@ -72,11 +70,21 @@ if (file_exists("settings.bin"))
 else
 {
 	global.settings = {
+		advancedMode: false,
+		cameraSmooth: true,
+		shading: true,
+		AALevel: 4,
 		watermark: "Made With BactaTank",
+		version: 0.4,
 	}
+	
+	snap_to_binary(global.settings, "settings.bin");
 }
 
-global.version = "v0.0.3_r8";
+// AA
+display_reset(global.settings.AALevel, true);
+
+global.version = "v0.0.3_r9";
 
 #endregion
 

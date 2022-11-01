@@ -4,7 +4,7 @@ if (imguigml_ready())
 {
 	//uiFileMenu();
 	//uiProjectWindow();
-	if (textureStruct.toolSelected == "")
+	if (textureStruct.toolSelected == "" && !textureStruct.settingsPage)
 	{
 		uiShortcuts(textureStruct);
 		if (global.model == -1 && !textureStruct.homeConfirmation) uiAlphaHomeScreen(textureStruct);
@@ -13,10 +13,14 @@ if (imguigml_ready())
 	}
 	else
 	{
-		if (textureStruct.toolSelected == "fe")
-		{
-			uiFontEditor(textureStruct);
-			window_set_caption("BactaTank - Font Editor");
-		}
+		if (!textureStruct.homeConfirmation) uiAlphaPreferencesScreen(textureStruct);
 	}
+	//else
+	//{
+	//	if (textureStruct.toolSelected == "fe")
+	//	{
+	//		uiFontEditor(textureStruct);
+	//		window_set_caption("BactaTank - Font Editor");
+	//	}
+	//}
 }

@@ -24,3 +24,21 @@ function string_is_real(str)
 	}
 	return n && n == string_length(s) - (string_char_at(s, 1) == "-") - (p != 0) - (e != 0);
 }
+
+function string_hex(dec, len)
+{
+    len = is_undefined(len) ? 1 : len;
+    var hex = "";
+ 
+    if (dec < 0) {
+        len = max(len, ceil(logn(16, 2*abs(dec))));
+    }
+ 
+    var dig = "0123456789ABCDEF";
+    while (len-- || dec) {
+        hex = string_char_at(dig, (dec & $F) + 1) + hex;
+        dec = dec >> 4;
+    }
+ 
+    return hex;
+}

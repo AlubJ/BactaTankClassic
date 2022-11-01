@@ -37,16 +37,16 @@ if (point_in_rectangle(window_mouse_get_x(), window_mouse_get_y(), 12, 370, 12+2
 	}
 	
 	// Zoom in and out
-	if (mouse_wheel_up()) camera_dist-=0.05;
-	if (mouse_wheel_down()) camera_dist+=0.05;
+	if (mouse_wheel_up()) camera_distPre -= camera_distPre / 4;
+	if (mouse_wheel_down()) camera_distPre += camera_distPre / 3;
 }
 
 // Orbit Camera
 if (device_mouse_check_button(0, mb_left) && clicked)
 {
-	dir += (lastXPos - device_mouse_raw_x(0))/2;
-	look_pitch += (lastYPos - device_mouse_raw_y(0))/2;
-	look_pitch = clamp(look_pitch, -89.999, 89.999);
+	dirPre += (lastXPos - device_mouse_raw_x(0))/2;
+	look_pitchPre += (lastYPos - device_mouse_raw_y(0))/2;
+	look_pitchPre = clamp(look_pitchPre, -89.999, 89.999);
 			
 	lastXPos = device_mouse_raw_x(0);
 	lastYPos = device_mouse_raw_y(0);
@@ -58,9 +58,9 @@ if (device_mouse_check_button_released(0, mb_left)) clicked = false;
 // Pan Camera
 if (device_mouse_check_button(0, mb_right) && clickedMove)
 {
-	x += dsin(dir) * (lastXPos - device_mouse_raw_x(0))/1000;
-	y += dcos(dir) * (lastXPos - device_mouse_raw_x(0))/1000;
-	z -= dcos(look_pitch) * (lastYPos - device_mouse_raw_y(0))/1000;
+	xPre += dsin(dir) * (lastXPos - device_mouse_raw_x(0))/1000;
+	yPre += dcos(dir) * (lastXPos - device_mouse_raw_x(0))/1000;
+	zPre -= dcos(look_pitch) * (lastYPos - device_mouse_raw_y(0))/1000;
 			
 	lastXPos = device_mouse_raw_x(0);
 	lastYPos = device_mouse_raw_y(0);
@@ -70,10 +70,30 @@ if (device_mouse_check_button(0, mb_right) && clickedMove)
 if (device_mouse_check_button_released(0, mb_right)) clickedMove = false;
 
 // Clamp Values
-camera_dist = clamp(camera_dist, 0.05, 2);
-z = clamp(z, -1, 1);
-y = clamp(y, -1, 1);
-x = clamp(x, -1, 1);
+camera_distPre = clamp(camera_distPre, 0.05, 2);
+zPre = clamp(zPre, -1, 1);
+yPre = clamp(yPre, -1, 1);
+xPre = clamp(xPre, -1, 1);
+
+// Smooth
+if (global.settings.cameraSmooth)
+{
+	camera_dist += (camera_distPre - camera_dist) / 8;
+	dir += (dirPre - dir) / 4;
+	look_pitch += (look_pitchPre - look_pitch) / 4;
+	x += (xPre - x) / 4;
+	y += (yPre - y) / 4;
+	z += (zPre - z) / 4;
+}
+else
+{
+	camera_dist = camera_distPre;
+	dir = dirPre;
+	look_pitch = look_pitchPre;
+	x = xPre;
+	y = yPre;
+	z = zPre;
+}
 
 // Point camera in 3rd person
 var xto = x;

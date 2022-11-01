@@ -39,6 +39,7 @@ textureStruct = {
 	materialSelected: -1,
 	
 	homeConfirmation: false,
+	settingsPage: false,
 	
 	toolSelected: "",
 	
@@ -46,14 +47,23 @@ textureStruct = {
 	loadedFont: -1,
 }
 
+
+lastXPosPre = device_mouse_raw_x(0);
+lastYPosPre = device_mouse_raw_y(0);
 lastXPos = device_mouse_raw_x(0);
 lastYPos = device_mouse_raw_y(0);
 clicked = false;
 clickedMove = false;
+camera_distPre = 0.5;
 camera_dist = 0.5;
+dirPre = 0;
 dir = 0;
+look_pitchPre = 0;
 look_pitch = 0;
+zPre = 0;
 z = 0;
+xPre = 0;
+yPre = 0;
 view_mat = 0;
 proj_mat = 0;
 
