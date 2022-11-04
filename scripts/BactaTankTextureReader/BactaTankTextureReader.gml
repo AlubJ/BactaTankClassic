@@ -7,7 +7,7 @@
 function readBactaTankTexture(buffer)
 {
 	// Skip ahead a little
-	buffer_seek(buffer, buffer_seek_relative, 0x0c);
+	buffer_seek(buffer, buffer_seek_start, 0x0c);
 
 	// Read Width and Height
 	var height = buffer_read(buffer, buffer_s32);
@@ -18,7 +18,7 @@ function readBactaTankTexture(buffer)
 	var compressionType = buffer_read(buffer, buffer_string);
 	
 	// Skip ahead
-	buffer_seek(buffer, buffer_seek_relative, 0x27);
+	buffer_seek(buffer, buffer_seek_start, 0x80);
 	
 	// Create Image Buffer
 	var imageBuffer = buffer_create(width * height * 4, buffer_fixed, 1);

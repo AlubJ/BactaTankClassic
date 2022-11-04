@@ -59,6 +59,7 @@
     {"id":{"name":"windowHelper","path":"scripts/windowHelper/windowHelper.yy",},"order":1,},
     {"id":{"name":"d3dHelper","path":"scripts/d3dHelper/d3dHelper.yy",},"order":4,},
     {"id":{"name":"crossedOut","path":"sprites/crossedOut/crossedOut.yy",},"order":21,},
+    {"id":{"name":"billboardShader","path":"shaders/billboardShader/billboardShader.yy",},"order":3,},
     {"id":{"name":"scnInit","path":"rooms/scnInit/scnInit.yy",},"order":0,},
   ],
   "Options": [

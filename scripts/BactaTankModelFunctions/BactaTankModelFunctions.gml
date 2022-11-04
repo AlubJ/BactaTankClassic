@@ -51,9 +51,18 @@ function replaceBactaTankMesh(modelStruct, meshIndex, meshFile)
 	
 	// Current Mesh
 	var mesh = modelStruct.nu20.meshes[meshIndex];
-	
+	var material = getBactaTankMeshMaterial(modelStruct, meshIndex);
+		
+	// VF value
+	var vfValue = 0;
+	if (mesh.vertexStride == 28) vfValue = 2313;
+	if (mesh.vertexStride == 36) vfValue = 33556745;
+		
 	// Get Vertex Format
-	var vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[getBactaTankMeshMaterial(modelStruct, meshIndex)].vertexFormat);
+	var material = getBactaTankMeshMaterial(modelStruct, meshIndex);
+	var vertexFormat = [];
+	if (material != -1)	vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[material].vertexFormat);
+	else vertexFormat = decodeBactaTankVertexFormat(vfValue);
 	
 	// Delete Old Buffers
 	buffer_delete(mesh.vertexBuffer);
@@ -158,19 +167,10 @@ function replaceBactaTankMesh(modelStruct, meshIndex, meshFile)
 					buffer_write(mesh.vertexBuffer, buffer_u32, 0);
 					break;
 				case bactatankVertexAttributes.blendIndices:
-					buffer_write(mesh.vertexBuffer, buffer_s32, -65280);
+					buffer_write(mesh.vertexBuffer, buffer_u32, 0xFFFFFF00);
 					break;
 				case bactatankVertexAttributes.blendWeights:
-					if (position[i][1] <= 0.2)
-					{
-						buffer_write(mesh.vertexBuffer, buffer_s32, 127);
-						show_debug_message("skinning 1");
-					}
-					else
-					{
-						buffer_write(mesh.vertexBuffer, buffer_s32, 32512);
-						show_debug_message("skinning 2");
-					}
+					buffer_write(mesh.vertexBuffer, buffer_u32, 0xFF);
 					break;
 			}
 		}

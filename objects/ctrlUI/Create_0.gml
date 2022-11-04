@@ -45,6 +45,8 @@ textureStruct = {
 	
 	fontCharacterSelected: -1,
 	loadedFont: -1,
+	
+	yySmooth: 0,
 }
 
 
@@ -90,6 +92,26 @@ for (var i = -10; i < 10; i++)
 }
 
 vertex_end(grid);
+
+// Billboard
+billboard = vertex_create_buffer();
+vertex_begin(billboard, global.billboardFormat);
+
+vertex_position_3d(billboard, -1, 1, 0);
+vertex_texcoord(billboard, 0, 0);
+vertex_position_3d(billboard, -1, 0, 0);
+vertex_texcoord(billboard, 1, 0);
+vertex_position_3d(billboard, 1, 0, 0);
+vertex_texcoord(billboard, 1, 1);
+
+vertex_position_3d(billboard, -1, 1, 0);
+vertex_texcoord(billboard, 0, 0);
+vertex_position_3d(billboard, 1, 1, 0);
+vertex_texcoord(billboard, 0, 1);
+vertex_position_3d(billboard, 1, 0, 0);
+vertex_texcoord(billboard, 1, 1);
+
+vertex_end(billboard);
 
 // Set Size For Project Window
 window_command_hook(window_command_maximize);

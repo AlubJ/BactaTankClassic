@@ -108,7 +108,7 @@ function uiAlphaMainScreen(textureStruct)
 				// Open GHG
 				if (imguigml_menu_item("Open GHG", "Ctrl+O"))
 				{
-					var file = get_open_filename("TTGames Model (*.GHG)|*.ghg", "");
+					var file = get_open_filename(global.openFileName, "");
 					if (file != "")
 					{
 						// Change Cursor To Loading Cursor
@@ -143,7 +143,7 @@ function uiAlphaMainScreen(textureStruct)
 				// Save GHG
 				if (imguigml_menu_item("Save GHG", "Ctrl+S", false, global.model == -1 ? false : true))
 				{
-					var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", global.filename);
+					var file = get_save_filename(global.saveFileName, global.filename);
 					if (file != "")
 					{
 						window_set_cursor(cr_hourglass);
@@ -194,13 +194,9 @@ function uiAlphaMainScreen(textureStruct)
 			//	imguigml_end_menu();
 			//}
 			
-			if (imguigml_begin_menu("Help"))
+			if (imguigml_menu_item("Help"))
 			{
-				imguigml_menu_item("Getting Started");
-				imguigml_menu_item("Documentation");
-				imguigml_separator();
-				imguigml_menu_item("Tutorial");
-				imguigml_end_menu();
+				url_open("https://github.com/AlubJ/BactaTankDocs/wiki/Getting-Started");
 			}
 			
 			imguigml_end_menu_bar();
@@ -295,7 +291,7 @@ function uiAlphaMainScreen(textureStruct)
 				
 					// Replace Texture Button
 					imguigml_set_cursor_pos(cursor[0] + 214, cursor[1] + 36);
-					if (imguigml_button("Replace Texture", 264, 24) && !global.model.nu20.textureMetaData[textureStruct.textureSelected].isCubemap)
+					if (imguigml_button("Replace Texture", 264, 24) && (!global.model.nu20.textureMetaData[textureStruct.textureSelected].isCubemap || (global.settings.advancedOptions && global.settings.cubeMapReplacement)))
 					{
 						// Get Open File Name For Replacement
 						var file = get_open_filename("DirectDraw Surface (*.dds)|*.dds", "");
@@ -472,7 +468,7 @@ function uiAlphaMainScreen(textureStruct)
 				
 					// Replace Mesh Button
 					imguigml_set_cursor_pos(cursor[0] + 214, cursor[1] + 36);
-					if (imguigml_button("Replace Mesh", 264, 24) && (global.model.nu20.meshes[textureStruct.meshSelected].bones[0] == -1 || global.settings.advancedMode))
+					if (imguigml_button("Replace Mesh", 264, 24) && (global.model.nu20.meshes[textureStruct.meshSelected].bones[0] == -1 || (global.settings.advancedOptions && global.settings.defaultSkinning)))
 					{
 						// Get Open File Name For Replacement
 						var file = get_open_filename("BactaTank Model (*.btank)|*.btank", "");
@@ -813,10 +809,9 @@ function uiAlphaHomeScreen(texureStruct)
 				textureStruct.settingsPage = true;
 			}
 			
-			if (imguigml_begin_menu("Help"))
+			if (imguigml_menu_item("Help"))
 			{
-				
-				imguigml_end_menu();
+				url_open("https://github.com/AlubJ/BactaTankDocs/wiki/Getting-Started");
 			}
 			
 			imguigml_end_menu_bar();
@@ -824,10 +819,10 @@ function uiAlphaHomeScreen(texureStruct)
 		
 		// Logo
 		imguigml_set_cursor_pos(58, 32);
-		imguigml_sprite(sprBactaTankLogoBeta, 0, 128, 128);
+		imguigml_sprite(sprBactaTankLogoRelease, 0, 128, 128);
 		imguigml_set_cursor_pos(198, 64);
 		imguigml_sprite(sprBactaTankText, 0, 256, 64);
-		imguigml_set_cursor_pos(390, 116);
+		imguigml_set_cursor_pos(406, 116);
 		imguigml_text(global.version);
 		
 		#region Buttons
@@ -836,7 +831,7 @@ function uiAlphaHomeScreen(texureStruct)
 		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
 		if (imguigml_button("Open GHG", 94, 24))
 		{
-			var file = get_open_filename("TTGames Model (*.GHG)|*.ghg", "");
+			var file = get_open_filename(global.openFileName, "");
 			if (file != "")
 			{
 				// Change Cursor To Loading Cursor
@@ -996,22 +991,49 @@ function uiAlphaPreferencesScreen(textureStruct)
 	
 	if (ret[0] && textureStruct.settingsPage == true)
 	{
-		imguigml_set_cursor_pos(122, 200);
-		if (imguigml_checkbox("##hiddenAdvancedMode", global.settings.advancedMode)[0]) global.settings.advancedMode = !global.settings.advancedMode;
-		imguigml_set_cursor_pos(150, 204);
-		imguigml_text("Advanced Mode");
-		imguigml_same_line();
-		imguigml_tooltip("Advanced Mode should only be used by experienced modders.\nAdvanced Mode can cause models to become corrupted and\nit is YOUR fault if this happens!");
 		
-		imguigml_set_cursor_pos(122, 228);
+		// Advanced Checkbox
+		imguigml_set_cursor_pos(122, 200);
+		if (imguigml_checkbox("##hiddenAdvancedOptions", global.settings.advancedOptions)[0]) global.settings.advancedOptions = !global.settings.advancedOptions;
+		imguigml_set_cursor_pos(150, 204);
+		imguigml_text("Advanced Options");
+		imguigml_same_line();
+		imguigml_tooltip("Advanced Options should only be used by experienced modders.\nAdvanced Options can cause models to become corrupted and\nit is YOUR fault if this happens!");
+		
+		var yy = 0;
+		
+		if (global.settings.advancedOptions)
+		{
+			// Cubemap Replacement
+			imguigml_set_cursor_pos(150, 228);
+			if (imguigml_checkbox("##hiddenCubemapReplacement", global.settings.cubeMapReplacement)[0]) global.settings.cubeMapReplacement = !global.settings.cubeMapReplacement;
+			imguigml_set_cursor_pos(178, 232);
+			imguigml_text("Cubemap Replacement");
+			imguigml_same_line();
+			imguigml_tooltip("Allows for replacing cubemap textures, may cause\nBactaTank to crash.");
+			
+			// Default Skinning
+			imguigml_set_cursor_pos(150, 256);
+			if (imguigml_checkbox("##hiddenDefaultSkinning", global.settings.defaultSkinning)[0]) global.settings.defaultSkinning = !global.settings.defaultSkinning;
+			imguigml_set_cursor_pos(178, 260);
+			imguigml_text("Default Static Skinning");
+			imguigml_same_line();
+			imguigml_tooltip("Inserts default skinning to make a skinned mesh appear as\nstatic, requires manual mesh data editing.");
+			
+			yy += 56;
+		}
+		
+		textureStruct.yySmooth += (yy - textureStruct.yySmooth) / 8;
+		
+		imguigml_set_cursor_pos(122, 228 + textureStruct.yySmooth);
 		if (imguigml_checkbox("##hiddenSmoothCamera", global.settings.cameraSmooth)[0]) global.settings.cameraSmooth = !global.settings.cameraSmooth;
-		imguigml_set_cursor_pos(150, 232);
+		imguigml_set_cursor_pos(150, 232 + textureStruct.yySmooth);
 		imguigml_text("Smooth Camera");
 		
 		var AALevel = ["No Anti-Aliasing", "2x", "4x", "8x"];
-		imguigml_set_cursor_pos(122, 256);
+		imguigml_set_cursor_pos(122, 256 + textureStruct.yySmooth);
 		imguigml_text("AA Level:");
-		imguigml_set_cursor_pos(122, 274);
+		imguigml_set_cursor_pos(122, 274 + textureStruct.yySmooth);
 		imguigml_push_item_width(256);
 		var index = 0;
 		if (global.settings.AALevel == 2) index = 1;
@@ -1027,9 +1049,9 @@ function uiAlphaPreferencesScreen(textureStruct)
 			display_reset(global.settings.AALevel, true);
 		}
 		
-		imguigml_set_cursor_pos(122, 302);
+		imguigml_set_cursor_pos(122, 302 + textureStruct.yySmooth);
 		imguigml_text("Watermark:");
-		imguigml_set_cursor_pos(122, 320);
+		imguigml_set_cursor_pos(122, 320 + textureStruct.yySmooth);
 		imguigml_push_item_width(256);
 		var ret = imguigml_input_text("##hiddenWaterMark", global.settings.watermark, 100);
 		if (ret[0])
@@ -1038,14 +1060,14 @@ function uiAlphaPreferencesScreen(textureStruct)
 		}
 		
 		imguigml_push_style_color(EImGui_Col.Button, 0.13, 0.13, 0.13, 1);
-		imguigml_set_cursor_pos(203, 348);
-		if (imguigml_button("Clear Cache", 96, 24))
+		imguigml_set_cursor_pos(122, 348 + textureStruct.yySmooth);
+		if (imguigml_button("Clear Cache", 256, 24))
 		{
 			directory_destroy(global.tempDirectory + @"_textures\");
 			directory_destroy(global.tempDirectory + @"_meshes\");
 		}
 		
-		imguigml_set_cursor_pos(203, 376);
+		imguigml_set_cursor_pos(203, 380 + textureStruct.yySmooth);
 		if (imguigml_button("Save", 96, 24))
 		{
 			snap_to_binary(global.settings, "settings.bin");
@@ -1173,7 +1195,7 @@ function uiShortcuts(textureStruct)
 	{
 		if (keyboard_check_pressed(ord("O")) && textureStruct.homeConfirmation == false)
 		{
-			var file = get_open_filename("TTGames Model (*.GHG)|*.ghg", "");
+			var file = get_open_filename(global.openFileName, "");
 			if (file != "")
 			{
 				// Change Cursor To Loading Cursor
@@ -1206,7 +1228,7 @@ function uiShortcuts(textureStruct)
 		}
 		else if (keyboard_check_pressed(ord("S")) && global.model != -1 && textureStruct.homeConfirmation == false)
 		{
-			var file = get_save_filename("TTGames Model (*.GHG)|*.ghg", global.filename);
+			var file = get_save_filename(global.saveFileName, global.filename);
 			if (file != "")
 			{
 				window_set_cursor(cr_hourglass);
@@ -1221,7 +1243,8 @@ function uiShortcuts(textureStruct)
 	}
 	
 	// Check If File Is Being Dragged Onto The App
-	var array = file_dropper_get_files([".ghg"]);
+	var ext = [".ghg"];
+	var array = file_dropper_get_files(ext);
 	file_dropper_flush();
 
 	if (array_length(array) > 0 && file_exists(array[0]) && !textureStruct.homeConfirmation) {

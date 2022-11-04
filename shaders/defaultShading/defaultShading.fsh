@@ -105,7 +105,7 @@ void main()
 	if (startColour.a < 0.5) discard;
 	
 	// Ambiant
-    vec4 ambient = vec4(0.25, 0.25, 0.25, 1.);
+    vec4 ambient = vec4(0.5, 0.5, 0.5, 1.);
 	
 	// Default Normal
 	vec3 normal = v_worldNormal;
@@ -130,7 +130,7 @@ void main()
     vec3 d = v_viewPos.xyz;
     
     // Normal
-	vec3 norm = vec3(-viewNormal.x, -viewNormal.y, -viewNormal.z);
+	vec3 norm = vec3(viewNormal.x, -viewNormal.y, -viewNormal.z);
     vec3 n = normalize(norm.xyz);
     
     // Reflect d around normal n

@@ -19,6 +19,12 @@ vertex_format_add_texcoord();
 vertex_format_add_colour();
 global.vertexFormat = vertex_format_end();
 
+// Billboard Vertex Format
+vertex_format_begin();
+vertex_format_add_position_3d();
+vertex_format_add_texcoord();
+global.billboardFormat = vertex_format_end();
+
 // Grid Vertex Format
 vertex_format_begin();
 vertex_format_add_position_3d();
@@ -70,10 +76,16 @@ if (file_exists("settings.bin"))
 else
 {
 	global.settings = {
-		advancedMode: false,
+		// Advanced Options
+		advancedOptions: false,
+		defaultSkinning: false,
+		cubeMapReplacement: false,
+		
+		// Other
 		cameraSmooth: true,
 		shading: true,
 		AALevel: 4,
+		useDifferentCacheLocation: false,
 		watermark: "Made With BactaTank",
 		version: 0.4,
 	}
@@ -84,7 +96,10 @@ else
 // AA
 display_reset(global.settings.AALevel, true);
 
-global.version = "v0.0.3_r9";
+global.version = "v0.0.4";
+
+global.openFileName = "TTGames Model (*.GHG)|*.ghg";
+global.saveFileName = "TTGames Model (*.GHG)|*.ghg";
 
 #endregion
 

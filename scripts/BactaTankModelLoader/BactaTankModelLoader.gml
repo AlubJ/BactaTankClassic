@@ -698,10 +698,16 @@ function generateBactaTankVBOs(modelStruct)
 			continue;
 		}
 		
+		// VF value
+		var vfValue = 0;
+		if (mesh.vertexStride == 28) vfValue = 2313;
+		if (mesh.vertexStride == 36) vfValue = 33556745;
+		
 		// Get Vertex Format
 		var material = getBactaTankMeshMaterial(modelStruct, i);
 		var vertexFormat = [];
 		if (material != -1)	vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[material].vertexFormat);
+		else vertexFormat = decodeBactaTankVertexFormat(vfValue);
 		
 		// Vertex Buffer
 		var currentVertexBuffer = noone;
@@ -864,26 +870,29 @@ function drawBactaTankMesh(modelStruct, meshIndex)
 	// Shading
 	shader_set(defaultShading);
 	
-	// Shader Flags
-	shader_set_uniform_f(bactatankShaderUseNormalMap, (modelStruct.nu20.materials[material].shaderFlags & 1) >= 1);
-	shader_set_uniform_f(bactatankShaderShiny, (modelStruct.nu20.materials[material].shaderFlags & 8) >= 1);
-	shader_set_uniform_f(bactatankShaderUseLighting, (modelStruct.nu20.materials[material].shaderFlags & 4096) >= 1);
-	
 	// Shader Lighting
 	shader_set_uniform_f(bactatankShaderLightDirection, 1, -1, 1);
 	shader_set_uniform_f(bactatankShaderLightColour, .9, .9, .9, 1);
 	
 	// Shader Blend Colour
-	if (texture == -1) shader_set_uniform_f(bactatankShaderBlendColour, modelStruct.nu20.materials[material].colour[0], modelStruct.nu20.materials[material].colour[1], modelStruct.nu20.materials[material].colour[2], 1);
+	if (texture == -1 && material != -1) shader_set_uniform_f(bactatankShaderBlendColour, modelStruct.nu20.materials[material].colour[0], modelStruct.nu20.materials[material].colour[1], modelStruct.nu20.materials[material].colour[2], 1);
 	else shader_set_uniform_f(bactatankShaderBlendColour, 1, 1, 1, 1);
 	
 	// Set Inverse View Matrix
 	shader_set_uniform_matrix_array(bactatankShaderInvView, inverse_matrix(matrix_get(matrix_view)));
 	
-	// Shader Textures
-	texture_set_stage(bactatankShaderCubeMap0, sprite_get_texture(cubemapShine, 0));
-	texture_set_stage(bactatankShaderCubeMap1, sprite_get_texture(cubemapBlack, 0));
-	if (normal != -1) texture_set_stage(bactatankShaderNormalMap, normal);
+	if (material != -1)
+	{
+		// Shader Flags
+		shader_set_uniform_f(bactatankShaderUseNormalMap, (modelStruct.nu20.materials[material].shaderFlags & 1) >= 1);
+		shader_set_uniform_f(bactatankShaderShiny, (modelStruct.nu20.materials[material].shaderFlags & 8) >= 1);
+		shader_set_uniform_f(bactatankShaderUseLighting, (modelStruct.nu20.materials[material].shaderFlags & 4096) >= 1);
+	
+		// Shader Textures
+		texture_set_stage(bactatankShaderCubeMap0, sprite_get_texture(cubemapShine, 0));
+		texture_set_stage(bactatankShaderCubeMap1, sprite_get_texture(cubemapBlack, 0));
+		if (normal != -1) texture_set_stage(bactatankShaderNormalMap, normal);
+	}
 	
 	// Backface Culling
 	//if (modelStruct.nu20.materials[material].alphaBlend & 8192) gpu_set_cullmode(cull_noculling);

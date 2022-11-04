@@ -224,9 +224,18 @@ function exportBactaTankMeshBtank(modelStruct, meshIndex, exportFile)
 	
 	// Mesh
 	var mesh = modelStruct.nu20.meshes[meshIndex];
-	
+	var material = getBactaTankMeshMaterial(modelStruct, meshIndex);
+		
+	// VF value
+	var vfValue = 0;
+	if (mesh.vertexStride == 28) vfValue = 2313;
+	if (mesh.vertexStride == 36) vfValue = 33556745;
+		
 	// Get Vertex Format
-	var vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[getBactaTankMeshMaterial(modelStruct, meshIndex)].vertexFormat);
+	var material = getBactaTankMeshMaterial(modelStruct, i);
+	var vertexFormat = [];
+	if (material != -1)	vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[material].vertexFormat);
+	else vertexFormat = decodeBactaTankVertexFormat(vfValue);
 	
 	// Write Header
 	buffer_write(buffer, buffer_string, "BactaTank");
@@ -330,9 +339,18 @@ function exportBactaTankMeshObj(modelStruct, meshIndex, exportFile)
 	
 	// Mesh
 	var mesh = modelStruct.nu20.meshes[meshIndex];
-	 
+	var material = getBactaTankMeshMaterial(modelStruct, meshIndex);
+		
+	// VF value
+	var vfValue = 0;
+	if (mesh.vertexStride == 28) vfValue = 2313;
+	if (mesh.vertexStride == 36) vfValue = 33556745;
+		
 	// Get Vertex Format
-	var vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[getBactaTankMeshMaterial(modelStruct, meshIndex)].vertexFormat);
+	var material = getBactaTankMeshMaterial(modelStruct, meshIndex);
+	var vertexFormat = [];
+	if (material != -1)	vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[material].vertexFormat);
+	else vertexFormat = decodeBactaTankVertexFormat(vfValue);
 	
 	// Write Vertex Positions
 	fileString += "# Positions\n";
@@ -360,8 +378,8 @@ function exportBactaTankMeshObj(modelStruct, meshIndex, exportFile)
 			{
 				fileString += "vn ";
 				fileString += string_format((((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position, buffer_u8)/255)*2)-1), 1, 5) + " ";
-				fileString += string_format((((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 1, buffer_u8)/255)*2)-1), 1, 5) + " ";
-				fileString += string_format((((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 2, buffer_u8)/255)*2)-1), 1, 5) + "\n";
+				fileString += string_format(-(((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 1, buffer_u8)/255)*2)-1), 1, 5) + " ";
+				fileString += string_format(-(((buffer_peek(mesh.vertexBuffer, (i*mesh.vertexStride) + vertexFormat[j].position + 2, buffer_u8)/255)*2)-1), 1, 5) + "\n";
 			}
 		}
 	}
@@ -455,9 +473,18 @@ function exportBactaTankObj(modelStruct, exportFile)
 	{
 		// Mesh
 		var mesh = modelStruct.nu20.meshes[i];
-	 
+		var material = getBactaTankMeshMaterial(modelStruct, i);
+		
+		// VF value
+		var vfValue = 0;
+		if (mesh.vertexStride == 28) vfValue = 2313;
+		if (mesh.vertexStride == 36) vfValue = 33556745;
+		
 		// Get Vertex Format
-		var vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[getBactaTankMeshMaterial(modelStruct, i)].vertexFormat);
+		var material = getBactaTankMeshMaterial(modelStruct, i);
+		var vertexFormat = [];
+		if (material != -1)	vertexFormat = decodeBactaTankVertexFormat(modelStruct.nu20.materials[material].vertexFormat);
+		else vertexFormat = decodeBactaTankVertexFormat(vfValue);
 		
 		objectFileString += "o Mesh" + string(i) + "\n";
 		
