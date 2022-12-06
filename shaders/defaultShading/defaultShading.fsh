@@ -1,9 +1,6 @@
 //
 // Simple passthrough fragment shader
 //
-// Attributes
-varying vec2 v_Texcoord;
-varying vec4 v_Colour;
 
 // Uniforms
 uniform vec3 lightDirection;
@@ -23,6 +20,9 @@ uniform sampler2D normalMap;
 uniform mat4 invView;
 
 // In from Vertex Shader
+varying vec2 v_Texcoord;
+varying vec3 v_position;
+varying vec4 v_Colour;
 varying vec3 v_worldNormal;
 varying vec4 v_viewNorm;
 varying vec4 v_viewPos;
@@ -130,7 +130,7 @@ void main()
     vec3 d = v_viewPos.xyz;
     
     // Normal
-	vec3 norm = vec3(viewNormal.x, -viewNormal.y, -viewNormal.z);
+	vec3 norm = vec3(-viewNormal.x, -viewNormal.y, -viewNormal.z);
     vec3 n = normalize(norm.xyz);
     
     // Reflect d around normal n
@@ -147,9 +147,22 @@ void main()
 	
 	// Lighting
 	if (useLighting == .0) fragColour *= vec4((ambient + diffuse).rgb, startColour.a);
-	
+
 	// Shiny
-	if (shiny == 1.) fragColour += (cubeMap * vec4((vec4(0., 0., 0., 1.) + diffuse).rgb, startColour.a));
+	//if (shiny == 1.) fragColour += (cubeMap * vec4((vec4(0., 0., 0., 1.) + diffuse).rgb, startColour.a));
+	if (shiny == 1.)
+	{
+		// Specular
+		float specularLight = .3;
+		vec3 viewDirection = -normalize(v_viewPos.xyz - v_position);
+		vec3 reflectionDirection = reflect(lightDir, viewNormal);
+	
+		float specularAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0), 16.);
+		
+		vec3 specular = specularAmount * specularLight * lightColour.rgb;
+		
+		fragColour += vec4(specular * (vec4(0.) + diffuse).rgb, startColour.a);
+	}
 	
 	gl_FragColor = fragColour;
 }

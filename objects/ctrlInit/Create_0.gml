@@ -17,6 +17,7 @@ vertex_format_add_position_3d();
 vertex_format_add_normal();
 vertex_format_add_texcoord();
 vertex_format_add_colour();
+vertex_format_add_texcoord();
 global.vertexFormat = vertex_format_end();
 
 // Billboard Vertex Format
@@ -33,12 +34,12 @@ global.gridFormat = vertex_format_end();
 #region Platform Settings
 
 // Base Window Size
+window_set_size(500, 600);
 global.screenWidth = window_get_width();
 global.screenHeight = window_get_height();
 
 // Window Settings
-window_set_size(500, 600);
-//window_set_clamp_size(global.screenWidth, global.screenHeight);
+window_set_clamp_size(global.screenWidth, global.screenHeight);
 
 // Resize the surfaces
 surface_resize(application_surface, global.screenWidth, global.screenHeight);

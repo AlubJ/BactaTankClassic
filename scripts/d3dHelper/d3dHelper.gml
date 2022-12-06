@@ -97,3 +97,77 @@ function inverse_matrix(argument0) {
 	return Array2DToMatrix( Result, 4 );
 }
 #endregion
+
+#region matrix_transpose
+
+function matrix_transpose(matrix)
+{
+	// New Matrix
+	var newMatrix = [];
+	
+	// Row One
+	newMatrix[0] = matrix[0];
+	newMatrix[1] = matrix[4];
+	newMatrix[2] = matrix[8];
+	newMatrix[3] = matrix[12];
+	
+	// Row Two
+	newMatrix[4] = matrix[1];
+	newMatrix[5] = matrix[5];
+	newMatrix[6] = matrix[9];
+	newMatrix[7] = matrix[13];
+	
+	// Row Three
+	newMatrix[8] = matrix[2];
+	newMatrix[9] = matrix[6];
+	newMatrix[10] = matrix[10];
+	newMatrix[11] = matrix[14];
+	
+	// Row Four
+	newMatrix[12] = matrix[3];
+	newMatrix[13] = matrix[7];
+	newMatrix[14] = matrix[11];
+	newMatrix[15] = matrix[15];
+	
+	// Return
+	return newMatrix;
+}
+
+#endregion
+
+#region matrix_transpose_new
+
+function matrix_transpose_new(matrix)
+{
+	// New Matrix
+	var newMatrix = [];
+	
+	// Row One
+	newMatrix[0] = matrix[0];
+	newMatrix[1] = matrix[4];
+	newMatrix[2] = matrix[8];
+	newMatrix[3] = matrix[3];
+	
+	// Row Two
+	newMatrix[4] = matrix[1];
+	newMatrix[5] = matrix[5];
+	newMatrix[6] = matrix[9];
+	newMatrix[7] = matrix[7];
+	
+	// Row Three
+	newMatrix[8] = matrix[2];
+	newMatrix[9] = matrix[6];
+	newMatrix[10] = matrix[10];
+	newMatrix[11] = matrix[11];
+	
+	// Row Four
+	newMatrix[12] = matrix[12];
+	newMatrix[13] = matrix[14];
+	newMatrix[14] = matrix[14];
+	newMatrix[15] = matrix[15];
+	
+	// Return
+	return newMatrix;
+}
+
+#endregion

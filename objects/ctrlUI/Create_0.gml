@@ -2,7 +2,7 @@
 
 imGuiInit()
 
-global.model = -1;
+global.model = -1; //loadBactaTankModel("_pcghg/LANDO.GHG");
 global.filename = "";
 
 //var ts = time_source_create(time_source_game, 10, time_source_units_frames, function() {
@@ -27,6 +27,17 @@ global.filename = "";
 //}
 //}, [], -1, time_source_expire_after);
 //time_source_start(ts);
+
+uiController = {
+	// Surfaces
+	viewerSurface: -1,
+	
+	// Selected
+	characterAttributeSelected: -1,
+	
+	// Dropdowns
+	dropdowns: {modelDropdown: false, modelTexturesDropdown: false, modelMeshesDropdown: false, modelMaterialsDropdown: false, modelLayersDropdown: false,},
+}
 
 textureStruct = {
 	presetSelected: -1,
@@ -68,6 +79,8 @@ xPre = 0;
 yPre = 0;
 view_mat = 0;
 proj_mat = 0;
+
+dynindex = 0;
 
 // Editor Grid
 grid = vertex_create_buffer();

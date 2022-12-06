@@ -11,6 +11,8 @@ room_height = global.screenHeight;
 if (global.model == -1) exit;
 
 // Create Surface If It Doesnt Exist
+//if (!surface_exists(uiController.viewerSurface)) uiController.viewerSurface = surface_create(floor(global.screenWidth/2)-18, floor(global.screenHeight/4 * 3) - 39);
+//surface_set_target(uiController.viewerSurface);
 if (!surface_exists(textureStruct.meshSurface)) textureStruct.meshSurface = surface_create(202, 202);
 surface_set_target(textureStruct.meshSurface);
 
@@ -18,6 +20,7 @@ surface_set_target(textureStruct.meshSurface);
 draw_clear_alpha(c_black, 0);
 
 // Mouse Controls In Viewer Window
+//if (point_in_rectangle(window_mouse_get_x(), window_mouse_get_y(), floor(global.screenWidth/4)+9, 30, floor(global.screenWidth/4) + floor(global.screenWidth/2) - 9, floor(global.screenHeight/4 * 3) - 9))
 if (point_in_rectangle(window_mouse_get_x(), window_mouse_get_y(), 12, 370, 12+202, 370+202))
 {
 	// Orbit Camera Toggle
@@ -106,6 +109,7 @@ var yfrom = yto - camera_dist * dsin(look_pitch);
 // Do the camera
 var camera = camera_get_active();
 view_mat = matrix_build_lookat(xfrom, yfrom, zfrom, xto, yto, zto, 0, -1, 0);
+//proj_mat = matrix_build_projection_perspective_fov(60, (floor(global.screenWidth/2)-18) / (floor(global.screenHeight/4 * 3) - 39), 0.001, 64000);
 proj_mat = matrix_build_projection_perspective_fov(60, 1/1, 0.001, 64000);
 camera_set_view_mat(camera, view_mat);
 camera_set_proj_mat(camera, proj_mat);
@@ -116,8 +120,22 @@ shader_set(gridShader);
 vertex_submit(grid, pr_linelist, -1);
 shader_reset();
 
+if (textureStruct.meshSelected != -1)
+{
+	if (mouse_wheel_up())
+	{
+		dynindex++;
+		show_debug_message(dynindex);
+	}
+	if (mouse_wheel_down()) dynindex--;
+
+	dynindex = clamp(dynindex, 0, array_length(global.model.nu20.meshes[textureStruct.meshSelected].dynamicBuffers) - 1);
+}
+else dynindex = 0;
+
 // Draw Mesh
-if (textureStruct.meshSelected != -1) drawBactaTankMesh(global.model, textureStruct.meshSelected);
+if (textureStruct.meshSelected != -1) drawBactaTankMesh(global.model, textureStruct.meshSelected, dynindex);
+//drawBactaTankModel(global.model);
 
 // Reset Target
 surface_reset_target();

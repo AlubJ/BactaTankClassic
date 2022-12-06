@@ -408,3 +408,5 @@ function decodeBactaTankVertexFormat(vertexFormat)
 }
 
 #endregion
+
+#region Edit Vertex Buffer

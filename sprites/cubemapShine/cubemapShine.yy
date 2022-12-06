@@ -68,7 +68,7 @@
   ],
   "nineSlice": null,
   "parent": {
-    "name": "BactaTankClassic",
-    "path": "BactaTankClassic.yyp",
+    "name": "Sprites",
+    "path": "folders/Sprites.yy",
   },
 }

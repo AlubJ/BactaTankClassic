@@ -168,6 +168,8 @@ function getBactaTankModelVersion(buffer)
 
 #endregion
 
+#region NU20 Block
+
 #region Read NU20
 
 function readBactaTankNU20(buffer, modelVersion, nu20Offset)
@@ -182,9 +184,43 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 	// GSNH Offset
 	var gsnhOffset = buffer_tell(buffer);
 	
+	// Texture Metadata
+	var textureMetaData = readBactaTankTextureMetadata(buffer, modelVersion, nu20Offset);
+	variable_struct_set(nu20, "textureMetaData", textureMetaData);
+	
+	// Read Materials
+	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x08);
+	var materials = readBactaTankMaterials(buffer, nu20Offset);
+	variable_struct_set(nu20, "materials", materials);
+	
+	// Read Meshes
+	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x1cc);
+	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) + 0x10);
+	var meshes = readBactaTankMeshes(buffer, nu20Offset);
+	variable_struct_set(nu20, "meshes", meshes);
+		
+	// Read Bones
+	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x164);
+	var bones = readBactaTankBones(buffer, nu20Offset);
+	variable_struct_set(nu20, "bones", bones);
+		
+	// Read Layers
+	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x18c);
+	var layers = readBactaTankLayers(buffer, array_length(bones));
+	variable_struct_set(nu20, "layers", layers);
+	
+	// Return NU20 Struct
+	return nu20;
+}
+
+#endregion
+
+#region Read Texture Metadata
+
+function readBactaTankTextureMetadata(buffer, modelVersion, nu20Offset)
+{
 	// Texture Count
 	var textureCount = buffer_read(buffer, buffer_u32);
-	variable_struct_set(nu20, "textureCount", textureCount);
 	
 	// Texture MetaData
 	var textureMetaData = [];
@@ -259,22 +295,25 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 		buffer_seek(buffer, buffer_seek_start, tempOffset);
 	}
 	
-	// Add texture metadata to NU20 struct
-	variable_struct_set(nu20, "textureMetaData", textureMetaData);
-	
-	// Goto GSNH
-	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x08);
-	
+	// Return Metadata
+	return textureMetaData;
+}
+
+#endregion
+
+#region Read Materials
+
+function readBactaTankMaterials(buffer, nu20Offset)
+{
 	// Material Count
-	var materialCount = buffer_peek(buffer, gsnhOffset + 0x0c, buffer_u32);
+	var materialCount = buffer_peek(buffer, buffer_tell(buffer) + 0x04, buffer_u32);
 	
 	// Material
 	var materials = [];
 	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) - 4);
 	
+	// Debug
 	show_debug_message("<BactaTank Model Loader> Reading " + string(materialCount) + " Materials");
-	
-	var lastVF = 0;
 	
 	// Materials
 	for (var i = 0; i < materialCount; i++)
@@ -314,13 +353,16 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 		buffer_seek(buffer, buffer_seek_start, tempOffset);
 	}
 	
-	// Add Materials to NU20 struct
-	variable_struct_set(nu20, "materials", materials);
-	
-	// Goto GSNH
-	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x1cc);
-	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) + 0x10);
-	
+	// Return Materials
+	return materials;
+}
+
+#endregion
+
+#region Read Meshes
+
+function readBactaTankMeshes(buffer, nu20Offset)
+{
 	// Mesh List
 	var meshes = [];
 	var meshCount = buffer_read(buffer, buffer_u32);
@@ -331,7 +373,7 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 	// Mesh Loop
 	for (var i = 0; i < meshCount; i++)
 	{
-		// Seek to texture entry
+		// Seek to mesh entry
 		var tempOffset = buffer_tell(buffer) + 4;
 		buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) - 4);
 		
@@ -344,12 +386,39 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 		var meshVertexStride = buffer_read(buffer, buffer_u16);
 		var meshBones = [];
 		repeat(8) array_push(meshBones, buffer_read(buffer, buffer_s8));
-		var meshFlags = buffer_read(buffer, buffer_u16); // Unused Within NU2 (We are using it to store some extra mesh data flags)
+		var meshFlags = buffer_read(buffer, buffer_u16); // Unused
 		var meshVertexOffset = buffer_read(buffer, buffer_u32);
 		var meshVertexCount = buffer_read(buffer, buffer_u32);
 		var meshIndexOffset = buffer_read(buffer, buffer_u32);
 		var meshIndexBufferID = buffer_read(buffer, buffer_u32);
 		var meshVertexBufferID = buffer_read(buffer, buffer_u32);
+		var meshDynamicBufferCount = buffer_read(buffer, buffer_u32);
+		buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_u32) - 4);
+		
+		// Dynamic Buffers
+		var meshDynamicBuffers = [];
+		for (var j = 0; j < meshDynamicBufferCount; j++)
+		{
+			// Dynamic Buffer
+			var dynamicBuffer = []; // VertexCount * 3
+			
+			// Seek to Dynamic Buffer
+			var tempDynOffset = buffer_tell(buffer) + 4;
+			var dynamicBufferOffset = buffer_read(buffer, buffer_u32);
+			buffer_seek(buffer, buffer_seek_relative, dynamicBufferOffset - 4);
+			
+			// Add points to dynamic buffer
+			if (dynamicBufferOffset != 0) repeat(meshVertexCount * 3) array_push(dynamicBuffer, buffer_read(buffer, buffer_f32));
+			else dynamicBuffer = -1;
+			
+			// Add To Dynamic Buffers List
+			meshDynamicBuffers[j] = dynamicBuffer;
+			
+			// Seek back to temp offset
+			buffer_seek(buffer, buffer_seek_start, tempDynOffset);
+		}
+		
+		if (meshDynamicBufferCount != 0) show_debug_message(meshDynamicBuffers);
 		
 		// Add To Meshes Array
 		meshes[i] = {
@@ -364,31 +433,83 @@ function readBactaTankNU20(buffer, modelVersion, nu20Offset)
 			triangleCount:	meshTriangleCount,
 			indexOffset:	meshIndexOffset,
 			indexBufferID:	meshIndexBufferID,
-			indexBuffer: buffer_create((meshTriangleCount + 2) * 2, buffer_fixed, 1),
-			vertexBuffer: buffer_create(meshVertexCount * meshVertexStride, buffer_fixed, 1),
+			dynamicBuffers: meshDynamicBuffers,
+			indexBuffer:    buffer_create((meshTriangleCount + 2) * 2, buffer_fixed, 1),
+			vertexBuffer:   buffer_create(meshVertexCount * meshVertexStride, buffer_fixed, 1),
 			vertexBufferObject: noone,
+			dynamicBufferObjects: noone,
 		}
 		
 		// Seek back to start
 		buffer_seek(buffer, buffer_seek_start, tempOffset);
 	}
 	
-	// Add Meshes to NU20 struct
-	variable_struct_set(nu20, "meshes", meshes);
-		
-	// Read Bones
-	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x164);
+	// Return Meshes
+	return meshes;
+}
+
+#endregion
+
+#region Read Bones
+
+function readBactaTankBones(buffer, nu20Offset)
+{
+	// Bone Count
 	var boneCount = buffer_read(buffer, buffer_s32);
+	
+	// Bone List
+	var bones = [];
+	
+	// Goto Bone Data
+	buffer_seek(buffer, buffer_seek_relative, buffer_read(buffer, buffer_s32) - 4);
+	
+	// Bone Names
+	for (var i = 0; i < boneCount; i++)
+	{
+		// Bone Matrix
+		var boneMatrix = [];
+		repeat(16) array_push(boneMatrix, buffer_read(buffer, buffer_f32));
 		
-	// Read Layers
-	buffer_seek(buffer, buffer_seek_start, gsnhOffset + 0x18c);
-	var layers = readBactaTankLayers(buffer, boneCount);
+		// Bone Name
+		buffer_seek(buffer, buffer_seek_relative, 0x0C);
+		var boneName = buffer_peek(buffer, buffer_tell(buffer) + buffer_read(buffer, buffer_s32), buffer_string);
+		
+		// Bone Parent
+		var boneParent = buffer_read(buffer, buffer_s8);
+		buffer_seek(buffer, buffer_seek_relative, 0x0f);
+		
+		// Bone Struct
+		bones[i] = {
+			name: boneName,
+			parent: boneParent,
+			matrix1: boneMatrix,
+			matrix: noone,
+		}
+	}
 	
-	// Add Layers To NU20
-	variable_struct_set(nu20, "layers", layers);
+	show_debug_message(buffer_tell(buffer));
 	
-	// Return NU20 Struct
-	return nu20;
+	// Bone Matrices
+	for (var i = 0; i < boneCount; i++)
+	{
+		// Bone Matrix
+		var boneMatrix = [];
+		repeat(16) array_push(boneMatrix, buffer_read(buffer, buffer_f32));
+		
+		//show_debug_message(buffer_tell(buffer));
+		//show_debug_message(bones[i].name);
+		//show_debug_message(boneMatrix);
+		
+		boneMatrix = matrix_multiply(boneMatrix, matrix_build(0, 0, 0, 0, 0, 0, -1, 1, 1));
+		
+		// Bone Struct
+		if (bones[i].parent != -1) boneMatrix = matrix_multiply(boneMatrix, bones[bones[i].parent].matrix);
+		bones[i].matrix = boneMatrix;
+		//show_debug_message(boneMatrix);
+	}
+	
+	// Return Bones
+	return bones;
 }
 
 #endregion
@@ -575,8 +696,11 @@ function readBactaTankLayers(buffer, boneCount)
 	}
 	
 	// Return Layers
+	show_debug_message(layers);
 	return layers;
 }
+
+#endregion
 
 #endregion
 
@@ -791,6 +915,7 @@ function generateBactaTankVBOs(modelStruct)
 				vertex_normal(currentVertexBuffer, norm[0], norm[1], norm[2]);
 				vertex_texcoord(currentVertexBuffer, tex[0], tex[1]);
 				vertex_colour(currentVertexBuffer, #ffffff, 1);
+				vertex_texcoord(currentVertexBuffer, index, 0);
 			}
 		
 			vertex_end(currentVertexBuffer);
@@ -852,9 +977,27 @@ function destroyBactaTankModel(modelStruct)
 
 #endregion
 
+#region Draw Model
+
+function drawBactaTankModel(modelStruct)
+{
+	for (var i = 0; i < array_length(modelStruct.nu20.layers); i++)
+	{
+		var meshes = modelStruct.nu20.layers[i].meshes;
+		for (var j = 0; j < array_length(meshes); j++)
+		{
+			if (meshes[j].bone != -1) matrix_set(matrix_world, modelStruct.nu20.bones[meshes[j].bone].matrix);
+			drawBactaTankMesh(modelStruct, meshes[j].mesh);
+			matrix_set(matrix_world, matrix_build_identity());
+		}
+	}
+}
+
+#endregion
+
 #region Draw Mesh
 
-function drawBactaTankMesh(modelStruct, meshIndex)
+function drawBactaTankMesh(modelStruct, meshIndex, dynamicBufferIndex)
 {
 	// Current Mesh
 	var mesh = modelStruct.nu20.meshes[meshIndex];
@@ -894,13 +1037,22 @@ function drawBactaTankMesh(modelStruct, meshIndex)
 		if (normal != -1) texture_set_stage(bactatankShaderNormalMap, normal);
 	}
 	
+	// Vertex Buffer
+	var vertexBuffer = mesh.vertexBufferObject;
+	
+	//if (array_length(mesh.dynamicBuffers) > 0)
+	//{
+		//if (mesh.dynamicBuffers[dynamicBufferIndex] != -1) shader_set_uniform_f_array(shader_get_uniform(defaultShading, "dynamicBuffer"), mesh.dynamicBuffers[dynamicBufferIndex]);
+		//else shader_set_uniform_f_array(shader_get_uniform(defaultShading, "dynamicBuffer"), array_create(4000, 0));
+	//}
+	
 	// Backface Culling
 	//if (modelStruct.nu20.materials[material].alphaBlend & 8192) gpu_set_cullmode(cull_noculling);
 	//else if (modelStruct.nu20.materials[material].alphaBlend & 4096) gpu_set_cullmode(cull_counterclockwise);
 	//else gpu_set_cullmode(cull_clockwise);
 	
 	// Submit Mesh
-	if (mesh.vertexBufferObject != -1) vertex_submit(mesh.vertexBufferObject, pr_trianglestrip, texture);
+	if (vertexBuffer != -1) vertex_submit(mesh.vertexBufferObject, pr_trianglestrip, texture);
 	
 	// Reset Backface Culling
 	gpu_set_cullmode(cull_noculling);
